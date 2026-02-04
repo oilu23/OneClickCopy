@@ -39,6 +39,7 @@ import androidx.navigation.navArgument
 import com.oneclickcopy.data.AppDatabase
 import com.oneclickcopy.data.Document
 import com.oneclickcopy.ui.HomeScreen
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.burnoutcrew.reorderable.*
 
@@ -120,9 +121,10 @@ fun EditorScreen(
         }
     }
     
-    // Auto-save when text changes
+    // Auto-save with debounce (waits 500ms after typing stops)
     LaunchedEffect(rawText, title) {
         if (document != null) {
+            delay(500) // Debounce - wait for user to stop typing
             database.documentDao().updateDocument(
                 document!!.copy(
                     title = title,

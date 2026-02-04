@@ -10,6 +10,12 @@ A simple Android app for quick one-tap text copying with copy tracking.
   - Checkbox marks items you've already copied
   - Drag handles to reorder items
   - Reset button clears all checkmarks
+- **Document Browser**: Save and manage multiple documents
+- **Auto-save**: Documents save automatically as you type
+
+## Known Limitations
+
+- Very long single lines (20,000+ characters) may cause lag. This is an edge case — typical copy snippets are much shorter.
 
 ## Building
 
