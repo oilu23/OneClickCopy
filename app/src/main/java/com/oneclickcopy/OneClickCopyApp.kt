@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
@@ -32,6 +31,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.oneclickcopy.data.AppDatabase
+import com.oneclickcopy.data.Document
+import com.oneclickcopy.ui.HomeScreen
+import kotlinx.coroutines.launch
 import org.burnoutcrew.reorderable.*
 
 data class TextItem(
@@ -40,16 +48,90 @@ data class TextItem(
     val isCopied: Boolean = false
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OneClickCopyApp() {
-    var title by remember { mutableStateOf("Title") }
+    val navController = rememberNavController()
+    val context = LocalContext.current
+    val database = remember { AppDatabase.getDatabase(context) }
+    val documents by database.documentDao().getAllDocuments().collectAsState(initial = emptyList())
+    val scope = rememberCoroutineScope()
+    
+    NavHost(navController = navController, startDestination = "home") {
+        composable("home") {
+            HomeScreen(
+                documents = documents,
+                onDocumentClick = { doc ->
+                    navController.navigate("editor/${doc.id}")
+                },
+                onCreateNew = {
+                    scope.launch {
+                        val newId = database.documentDao().insertDocument(
+                            Document(title = "Untitled", content = "")
+                        )
+                        navController.navigate("editor/$newId")
+                    }
+                },
+                onDeleteDocument = { doc ->
+                    scope.launch {
+                        database.documentDao().deleteDocument(doc)
+                    }
+                }
+            )
+        }
+        
+        composable(
+            route = "editor/{documentId}",
+            arguments = listOf(navArgument("documentId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val documentId = backStackEntry.arguments?.getLong("documentId") ?: return@composable
+            
+            EditorScreen(
+                documentId = documentId,
+                database = database,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditorScreen(
+    documentId: Long,
+    database: AppDatabase,
+    onNavigateBack: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    
+    var document by remember { mutableStateOf<Document?>(null) }
+    var title by remember { mutableStateOf("") }
     var isEditingTitle by remember { mutableStateOf(false) }
     var isCopyMode by remember { mutableStateOf(false) }
     var rawText by remember { mutableStateOf("") }
     var items by remember { mutableStateOf(listOf<TextItem>()) }
     
-    val context = LocalContext.current
+    // Load document
+    LaunchedEffect(documentId) {
+        document = database.documentDao().getDocumentById(documentId)
+        document?.let {
+            title = it.title
+            rawText = it.content
+        }
+    }
+    
+    // Auto-save when text changes
+    LaunchedEffect(rawText, title) {
+        if (document != null) {
+            database.documentDao().updateDocument(
+                document!!.copy(
+                    title = title,
+                    content = rawText,
+                    updatedAt = System.currentTimeMillis()
+                )
+            )
+        }
+    }
     
     // Convert raw text to items when switching to copy mode
     LaunchedEffect(isCopyMode) {
@@ -59,7 +141,9 @@ fun OneClickCopyApp() {
                 .mapIndexed { index, line -> TextItem(index, line.trim()) }
         } else {
             // Convert items back to raw text when switching to edit mode
-            rawText = items.joinToString("\n") { it.text }
+            if (items.isNotEmpty()) {
+                rawText = items.joinToString("\n") { it.text }
+            }
         }
     }
     
@@ -89,13 +173,13 @@ fun OneClickCopyApp() {
                         )
                     } else {
                         Text(
-                            text = title,
+                            text = title.ifEmpty { "Untitled" },
                             modifier = Modifier.clickable { isEditingTitle = true }
                         )
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { /* Navigate back */ }) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },

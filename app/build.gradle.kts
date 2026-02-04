@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -63,7 +64,10 @@ dependencies {
     // Room for persistence
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
-    annotationProcessor("androidx.room:room-compiler:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
+    
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.7.5")
     
     // Reorderable list
     implementation("org.burnoutcrew.composereorderable:reorderable:0.9.6")
