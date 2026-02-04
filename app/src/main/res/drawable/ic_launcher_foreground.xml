@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Checkmark icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,58L48,62L64,46L66,48L48,66L42,60Z"/>
+    <!-- Copy icon outline -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,38h20v4H44v24h-4V38z M48,42h20v28H48V42z M52,46v20h12V46H52z"/>
+</vector>
