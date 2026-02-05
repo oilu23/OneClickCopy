@@ -11,6 +11,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -23,6 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
@@ -157,6 +163,9 @@ fun EditorScreen(
         }
     )
     
+    // Detect if keyboard is visible
+    val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    
     Scaffold(
         topBar = {
             TopAppBar(
@@ -202,15 +211,20 @@ fun EditorScreen(
             )
         },
         bottomBar = {
-            BottomBar(
-                isCopyMode = isCopyMode,
-                onToggle = { isCopyMode = it },
-                onReset = {
-                    items = items.map { it.copy(isCopied = false) }
-                }
-            )
+            // Hide bottom bar when keyboard is visible
+            if (!imeVisible) {
+                BottomBar(
+                    isCopyMode = isCopyMode,
+                    onToggle = { isCopyMode = it },
+                    onReset = {
+                        items = items.map { it.copy(isCopied = false) }
+                    }
+                )
+            }
         }
     ) { padding ->
+        val scrollState = rememberScrollState()
+        
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -252,30 +266,43 @@ fun EditorScreen(
                     }
                 }
             } else {
-                // Edit Mode - Text editor
-                BasicTextField(
-                    value = rawText,
-                    onValueChange = { rawText = it },
-                    textStyle = TextStyle(
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                // Edit Mode - Text editor (scrollable)
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp),
-                    decorationBox = { innerTextField ->
-                        if (rawText.isEmpty()) {
-                            Text(
-                                text = "Enter your text here...\nEach line becomes a copy item.",
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                                fontSize = 18.sp
-                            )
+                        .verticalScroll(scrollState)
+                ) {
+                    BasicTextField(
+                        value = rawText,
+                        onValueChange = { rawText = it },
+                        textStyle = TextStyle(
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 400.dp)
+                            .padding(16.dp),
+                        decorationBox = { innerTextField ->
+                            if (rawText.isEmpty()) {
+                                Text(
+                                    text = "Enter your text here...\nEach line becomes a copy item.",
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                                    fontSize = 18.sp
+                                )
+                            }
+                            innerTextField()
                         }
-                        innerTextField()
-                    }
-                )
+                    )
+                    // Spacer that grows when keyboard is visible
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .imePadding()
+                    )
+                }
             }
         }
     }
