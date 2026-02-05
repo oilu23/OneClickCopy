@@ -113,6 +113,7 @@ fun OneClickCopyApp() {
                                 Document(
                                     title = doc.title,
                                     content = doc.content,
+                                    copiedItems = doc.copiedItems,
                                     createdAt = doc.createdAt,
                                     updatedAt = doc.updatedAt
                                 )
@@ -160,6 +161,28 @@ fun EditorScreen(
     var isCopyMode by remember { mutableStateOf(false) }
     var rawText by remember { mutableStateOf("") }
     var items by remember { mutableStateOf(listOf<TextItem>()) }
+    // Track copied items by their text - persists across mode switches AND navigation
+    var copiedTexts by remember { mutableStateOf(setOf<String>()) }
+    // Track if items were reordered in copy mode
+    var wasReordered by remember { mutableStateOf(false) }
+    
+    // Helper to parse/serialize copiedItems
+    fun parseCopiedItems(json: String): Set<String> {
+        if (json.isBlank()) return emptySet()
+        return try {
+            json.removeSurrounding("[", "]")
+                .split("\",\"")
+                .map { it.trim('"') }
+                .filter { it.isNotEmpty() }
+                .toSet()
+        } catch (e: Exception) { emptySet() }
+    }
+    
+    fun serializeCopiedItems(items: Set<String>): String {
+        if (items.isEmpty()) return ""
+        return items.joinToString(",") { "\"${it.replace("\"", "\\\"")}\"" }
+            .let { "[$it]" }
+    }
     
     // Load document
     LaunchedEffect(documentId) {
@@ -167,17 +190,19 @@ fun EditorScreen(
         document?.let {
             title = it.title
             rawText = it.content
+            copiedTexts = parseCopiedItems(it.copiedItems)
         }
     }
     
     // Auto-save with debounce (waits 500ms after typing stops)
-    LaunchedEffect(rawText, title) {
+    LaunchedEffect(rawText, title, copiedTexts) {
         if (document != null) {
             delay(500) // Debounce - wait for user to stop typing
             database.documentDao().updateDocument(
                 document!!.copy(
                     title = title,
                     content = rawText,
+                    copiedItems = serializeCopiedItems(copiedTexts),
                     updatedAt = System.currentTimeMillis()
                 )
             )
@@ -187,12 +212,16 @@ fun EditorScreen(
     // Convert raw text to items when switching to copy mode
     LaunchedEffect(isCopyMode) {
         if (isCopyMode) {
+            wasReordered = false
             items = rawText.lines()
                 .filter { it.isNotBlank() }
-                .mapIndexed { index, line -> TextItem(index, line.trim()) }
+                .mapIndexed { index, line -> 
+                    val trimmed = line.trim()
+                    TextItem(index, trimmed, isCopied = trimmed in copiedTexts)
+                }
         } else {
-            // Convert items back to raw text when switching to edit mode
-            if (items.isNotEmpty()) {
+            // Only update rawText if items were reordered, to preserve blank lines
+            if (wasReordered && items.isNotEmpty()) {
                 rawText = items.joinToString("\n") { it.text }
             }
         }
@@ -200,6 +229,7 @@ fun EditorScreen(
     
     val reorderState = rememberReorderableLazyListState(
         onMove = { from, to ->
+            wasReordered = true
             items = items.toMutableList().apply {
                 add(to.index, removeAt(from.index))
             }
@@ -256,6 +286,7 @@ fun EditorScreen(
                     isCopyMode = isCopyMode,
                     onToggle = { isCopyMode = it },
                     onReset = {
+                        copiedTexts = emptySet()
                         items = items.map { it.copy(isCopied = false) }
                     }
                 )
@@ -292,12 +323,11 @@ fun EditorScreen(
                                     val clip = ClipData.newPlainText("Copied text", item.text)
                                     clipboard.setPrimaryClip(clip)
                                     
-                                    // Mark as copied
+                                    // Mark as copied (both in items and persistent set)
+                                    copiedTexts = copiedTexts + item.text
                                     items = items.map { 
                                         if (it.id == item.id) it.copy(isCopied = true) else it 
                                     }
-                                    
-                                    Toast.makeText(context, "Copied!", Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier.detectReorderAfterLongPress(reorderState)
                             )
@@ -409,18 +439,10 @@ fun BottomBar(
     )
     
     Surface(
-        color = Color(0xFFE0E0E0),
+        color = Color(0xFF1A1A1A),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column {
-            // Purple accent line
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(3.dp)
-                    .background(Color(0xFF9C27B0))
-            )
-            
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -488,7 +510,7 @@ fun BottomBar(
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = "Reset checkmarks",
-                                tint = Color.DarkGray
+                                tint = Color.White
                             )
                         }
                     }
