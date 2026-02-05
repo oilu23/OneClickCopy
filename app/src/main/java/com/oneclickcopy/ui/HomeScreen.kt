@@ -37,6 +37,7 @@ import java.util.*
 @Composable
 fun HomeScreen(
     documents: List<Document>,
+    shouldBackup: Boolean = false,
     onDocumentClick: (Document) -> Unit,
     onCreateNew: () -> Unit,
     onDeleteDocument: (Document) -> Unit,
@@ -67,10 +68,10 @@ fun HomeScreen(
     var isLoading by remember { mutableStateOf(false) }
     var userEmail by remember { mutableStateOf(backupManager.getSignedInAccount()?.email) }
     
-    // Auto-backup once when HomeScreen is displayed (app launch or returning from editor)
+    // Auto-backup only when returning from editor, not on app launch
     var hasBackedUp by remember { mutableStateOf(false) }
-    LaunchedEffect(documents) {
-        if (!hasBackedUp && documents.isNotEmpty()) {
+    LaunchedEffect(documents, shouldBackup) {
+        if (shouldBackup && !hasBackedUp && documents.isNotEmpty()) {
             hasBackedUp = true
             autoBackupManager.requestBackup(documents)
         }

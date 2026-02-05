@@ -62,6 +62,8 @@ fun OneClickCopyApp() {
     val database = remember { AppDatabase.getDatabase(context) }
     val documents by database.documentDao().getAllDocuments().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
+    // Track if we've visited editor - only backup when returning FROM editor
+    var hasVisitedEditor by remember { mutableStateOf(false) }
     
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
@@ -80,8 +82,10 @@ fun OneClickCopyApp() {
             
             HomeScreen(
                 documents = documents,
+                shouldBackup = hasVisitedEditor,
                 onDocumentClick = { doc ->
                     if (canNavigate()) {
+                        hasVisitedEditor = true
                         navController.navigate("editor/${doc.id}") {
                             launchSingleTop = true
                         }
@@ -89,6 +93,7 @@ fun OneClickCopyApp() {
                 },
                 onCreateNew = {
                     if (canNavigate()) {
+                        hasVisitedEditor = true
                         scope.launch {
                             val newId = database.documentDao().insertDocument(
                                 Document(title = "Untitled", content = "")
