@@ -67,9 +67,11 @@ fun HomeScreen(
     var isLoading by remember { mutableStateOf(false) }
     var userEmail by remember { mutableStateOf(backupManager.getSignedInAccount()?.email) }
     
-    // Auto-backup when HomeScreen is displayed (app launch or returning from editor)
+    // Auto-backup once when HomeScreen is displayed (app launch or returning from editor)
+    var hasBackedUp by remember { mutableStateOf(false) }
     LaunchedEffect(documents) {
-        if (documents.isNotEmpty()) {
+        if (!hasBackedUp && documents.isNotEmpty()) {
+            hasBackedUp = true
             autoBackupManager.requestBackup(documents)
         }
     }
