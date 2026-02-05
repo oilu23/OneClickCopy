@@ -65,17 +65,38 @@ fun OneClickCopyApp() {
     
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
+            // Debounce navigation with auto-reset after 500ms
+            var lastNavTime by remember { mutableStateOf(0L) }
+            
+            fun canNavigate(): Boolean {
+                val now = System.currentTimeMillis()
+                return if (now - lastNavTime > 500) {
+                    lastNavTime = now
+                    true
+                } else {
+                    false
+                }
+            }
+            
             HomeScreen(
                 documents = documents,
                 onDocumentClick = { doc ->
-                    navController.navigate("editor/${doc.id}")
+                    if (canNavigate()) {
+                        navController.navigate("editor/${doc.id}") {
+                            launchSingleTop = true
+                        }
+                    }
                 },
                 onCreateNew = {
-                    scope.launch {
-                        val newId = database.documentDao().insertDocument(
-                            Document(title = "Untitled", content = "")
-                        )
-                        navController.navigate("editor/$newId")
+                    if (canNavigate()) {
+                        scope.launch {
+                            val newId = database.documentDao().insertDocument(
+                                Document(title = "Untitled", content = "")
+                            )
+                            navController.navigate("editor/$newId") {
+                                launchSingleTop = true
+                            }
+                        }
                     }
                 },
                 onDeleteDocument = { doc ->
@@ -107,11 +128,17 @@ fun OneClickCopyApp() {
             arguments = listOf(navArgument("documentId") { type = NavType.LongType })
         ) { backStackEntry ->
             val documentId = backStackEntry.arguments?.getLong("documentId") ?: return@composable
+            var hasNavigatedBack by remember { mutableStateOf(false) }
             
             EditorScreen(
                 documentId = documentId,
                 database = database,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    if (!hasNavigatedBack) {
+                        hasNavigatedBack = true
+                        navController.popBackStack()
+                    }
+                }
             )
         }
     }
@@ -214,10 +241,6 @@ fun EditorScreen(
                     if (isEditingTitle) {
                         IconButton(onClick = { isEditingTitle = false }) {
                             Icon(Icons.Default.Check, contentDescription = "Done editing title")
-                        }
-                    } else {
-                        IconButton(onClick = { /* Pin action */ }) {
-                            Icon(Icons.Default.PushPin, contentDescription = "Pin")
                         }
                     }
                 },
