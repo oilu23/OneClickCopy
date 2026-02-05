@@ -82,6 +82,22 @@ fun OneClickCopyApp() {
                     scope.launch {
                         database.documentDao().deleteDocument(doc)
                     }
+                },
+                onRestoreDocuments = { restoredDocs ->
+                    scope.launch {
+                        // Insert all restored documents
+                        restoredDocs.forEach { doc ->
+                            // Create new document with same content but new ID
+                            database.documentDao().insertDocument(
+                                Document(
+                                    title = doc.title,
+                                    content = doc.content,
+                                    createdAt = doc.createdAt,
+                                    updatedAt = doc.updatedAt
+                                )
+                            )
+                        }
+                    }
                 }
             )
         }
