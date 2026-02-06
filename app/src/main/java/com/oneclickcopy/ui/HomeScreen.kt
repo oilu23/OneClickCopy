@@ -87,19 +87,17 @@ fun HomeScreen(
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                isSignedIn = true
-                userEmail = account?.email
-                Toast.makeText(context, "Signed in as ${account?.email}", Toast.LENGTH_SHORT).show()
-                
-                // Try auto-restore on first login
-                autoBackupManager.tryAutoRestore()
-            } catch (e: ApiException) {
-                Toast.makeText(context, "Sign-in failed: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            isSignedIn = true
+            userEmail = account?.email
+            Toast.makeText(context, "Signed in as ${account?.email}", Toast.LENGTH_SHORT).show()
+            
+            // Try auto-restore on first login
+            autoBackupManager.tryAutoRestore()
+        } catch (e: ApiException) {
+            Toast.makeText(context, "Sign-in failed (code ${e.statusCode}): ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
     
@@ -175,6 +173,7 @@ fun HomeScreen(
                             }
                         }
                     )
+                    @Suppress("DEPRECATION")
                     Divider()
                     DropdownMenuItem(
                         text = { Text("Sign out") },
