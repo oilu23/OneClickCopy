@@ -1,6 +1,7 @@
 package com.oneclickcopy.data
 
 import com.oneclickcopy.domain.CopiedStateCodec
+import com.oneclickcopy.domain.LegacyDocumentIdentity
 import com.oneclickcopy.domain.SnippetKey
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -111,7 +112,17 @@ class DocumentRepository(
             var skipped = 0
 
             incoming.forEach { candidate ->
-                val uuid = candidate.uuid.ifEmpty { UUID.randomUUID().toString() }
+                // Documents from pre-v2 backups carry no uuid. Deriving one
+                // deterministically from their immutable fields — rather than
+                // generating a random one — is what makes repeated restores of a
+                // legacy file idempotent instead of doubling the library.
+                val uuid = candidate.uuid.ifEmpty {
+                    LegacyDocumentIdentity.derive(
+                        createdAt = candidate.createdAt,
+                        title = candidate.title,
+                        content = candidate.content,
+                    )
+                }
                 val existing = dao.getByUuid(uuid)
                 when {
                     existing == null -> {
