@@ -20,6 +20,14 @@ class DocumentRepository(
     private val ioDispatcher: CoroutineDispatcher,
 ) {
 
+    /**
+     * Invoked after any local mutation so an observer (the sync layer) can react.
+     * Kept as a plain callback so the data layer has no dependency on sync.
+     */
+    var onChanged: (() -> Unit)? = null
+
+    private fun notifyChanged() = onChanged?.invoke()
+
     fun observeDocuments(): Flow<List<DocumentEntity>> = dao.observeAll()
 
     /** Filters documents by title or body, case-insensitively. */
@@ -49,7 +57,7 @@ class DocumentRepository(
                 updatedAt = now,
                 uuid = UUID.randomUUID().toString(),
             )
-        )
+        ).also { notifyChanged() }
     }
 
     suspend fun saveDocument(
@@ -70,15 +78,21 @@ class DocumentRepository(
         // every keystroke debounce tick even when the content was identical.
         if (updated.copyOf(updatedAt = existing.updatedAt) != existing) {
             dao.update(updated)
+            notifyChanged()
         }
     }
 
     suspend fun deleteDocument(document: DocumentEntity) =
-        withContext(ioDispatcher) { dao.delete(document) }
+        withContext(ioDispatcher) {
+            dao.delete(document)
+            notifyChanged()
+        }
 
     /** Re-inserts a deleted document, preserving its identity, for undo support. */
     suspend fun restoreDocument(document: DocumentEntity): Long =
-        withContext(ioDispatcher) { dao.insert(document) }
+        withContext(ioDispatcher) {
+            dao.insert(document).also { notifyChanged() }
+        }
 
     suspend fun discardIfEmpty(id: Long) =
         withContext(ioDispatcher) { dao.deleteIfEmpty(id) }

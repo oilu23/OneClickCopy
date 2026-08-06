@@ -37,7 +37,12 @@ fun OneClickCopyNavHost(
     ) {
         composable(Routes.HOME) {
             val homeViewModel: HomeViewModel = viewModel(
-                factory = HomeViewModel.factory(repository),
+                factory = HomeViewModel.factory(
+                    repository = repository,
+                    syncManager = container.syncManager,
+                    driveBackupManager = container.driveBackupManager,
+                    documentTransfer = container.documentTransfer,
+                ),
             )
             HomeScreen(
                 viewModel = homeViewModel,

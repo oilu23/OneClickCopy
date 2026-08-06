@@ -12,6 +12,8 @@ room = "2.6.1"
 coroutines = "1.8.1"
 kotlinxSerialization = "1.6.3"
 reorderable = "2.1.1"
+work = "2.9.0"
+lifecycleProcess = "2.8.3"
 playServicesAuth = "21.2.0"
 googleApiClient = "2.6.0"
 googleApiDrive = "v3-rev20240509-2.0.0"
@@ -53,6 +55,10 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
+
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
+androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycleProcess" }
 
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 google-api-client-android = { module = "com.google.api-client:google-api-client-android", version.ref = "googleApiClient" }

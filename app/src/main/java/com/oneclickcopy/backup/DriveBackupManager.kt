@@ -23,10 +23,10 @@ import java.io.ByteArrayOutputStream
 /**
  * Google Drive backup transport.
  *
- * Changes from the original: the backup file lives in the Drive *appDataFolder*
- * rather than the user's visible root, JSON is handled by kotlinx.serialization
- * with unknown-key tolerance, and errors surface as typed [BackupError]s instead
- * of raw exception strings.
+ * The backup lives in Drive's `appDataFolder`, a private per-app area that does
+ * not appear among the user's normal Drive files and does not count against a
+ * developer quota. The requested scope (`drive.appdata`) is classified
+ * non-sensitive by Google, so it requires no security assessment.
  */
 class DriveBackupManager(
     private val context: Context,
@@ -41,7 +41,14 @@ class DriveBackupManager(
     private val signInOptions: GoogleSignInOptions by lazy {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
-            .requestScopes(Scope(DriveScopes.DRIVE_APPDATA))
+            .requestScopes(
+                Scope(DriveScopes.DRIVE_APPDATA),
+                // Also request the legacy scope so a one-time migration can read
+                // backups written by older versions, which stored the file in the
+                // user's visible Drive under drive.file. Without this, upgrading
+                // users would silently lose access to their existing backup.
+                Scope(DriveScopes.DRIVE_FILE),
+            )
             .requestIdToken(context.getString(R.string.default_web_client_id))
             .build()
     }
@@ -54,6 +61,8 @@ class DriveBackupManager(
 
     fun isSignedIn(): Boolean = signedInAccount() != null
 
+    fun accountEmail(): String? = signedInAccount()?.email
+
     fun signInIntent(): Intent = signInClient.signInIntent
 
     suspend fun signOut() = withContext(ioDispatcher) {
@@ -61,7 +70,7 @@ class DriveBackupManager(
         Unit
     }
 
-    suspend fun backup(documents: List<BackupDocument>): Result<Unit> =
+    suspend fun upload(documents: List<BackupDocument>): Result<Unit> =
         withContext(ioDispatcher) {
             runCatching {
                 val drive = driveService() ?: throw BackupError.NotSignedIn
@@ -71,7 +80,7 @@ class DriveBackupManager(
                     json.encodeToString(BackupPayload.serializer(), payload),
                 )
 
-                val existingId = findBackupFileId(drive)
+                val existingId = findFileId(drive, APP_DATA_FOLDER)
                 if (existingId != null) {
                     drive.files().update(existingId, null, body).execute()
                 } else {
@@ -86,26 +95,55 @@ class DriveBackupManager(
             }
         }
 
-    suspend fun restore(): Result<List<BackupDocument>> = withContext(ioDispatcher) {
+    /**
+     * Downloads the backup, falling back to the legacy pre-appdata location.
+     *
+     * Older releases wrote `oneclickcopy_backup.json` into the user's visible
+     * Drive using the `drive.file` scope. Files created under that scope are not
+     * visible to `appDataFolder` queries, so without this fallback an upgrading
+     * user would appear to have no backup at all.
+     */
+    suspend fun download(): Result<List<BackupDocument>> = withContext(ioDispatcher) {
         runCatching {
             val drive = driveService() ?: throw BackupError.NotSignedIn
-            val fileId = findBackupFileId(drive) ?: throw BackupError.NoBackupFound
+
+            val fileId = findFileId(drive, APP_DATA_FOLDER)
+                ?: findFileId(drive, DRIVE_SPACE)
+                ?: throw BackupError.NoBackupFound
 
             val output = ByteArrayOutputStream()
             drive.files().get(fileId).executeMediaAndDownloadTo(output)
 
-            val payload = json.decodeFromString(
-                BackupPayload.serializer(),
-                output.toString(Charsets.UTF_8.name()),
-            )
-            payload.documents
+            val raw = output.toString(Charsets.UTF_8.name())
+            decodePayload(raw)
+        }
+    }
+
+    /**
+     * Parses a backup document, accepting both the current versioned payload and
+     * the original v1 format produced by the pre-refactor Gson implementation.
+     */
+    internal fun decodePayload(raw: String): List<BackupDocument> {
+        if (raw.isBlank()) return emptyList()
+        return runCatching {
+            json.decodeFromString(BackupPayload.serializer(), raw).documents
+        }.getOrElse {
+            // v1 payloads had the same top-level shape but documents carried no
+            // uuid field. ignoreUnknownKeys handles extra fields; a bare array is
+            // the other historical shape.
+            runCatching {
+                json.decodeFromString(
+                    kotlinx.serialization.builtins.ListSerializer(BackupDocument.serializer()),
+                    raw,
+                )
+            }.getOrElse { emptyList() }
         }
     }
 
     private fun driveService(): Drive? {
         val account = signedInAccount() ?: return null
         val credential = GoogleAccountCredential
-            .usingOAuth2(context, listOf(DriveScopes.DRIVE_APPDATA))
+            .usingOAuth2(context, listOf(DriveScopes.DRIVE_APPDATA, DriveScopes.DRIVE_FILE))
             .apply { selectedAccount = account.account }
 
         return Drive.Builder(
@@ -117,24 +155,27 @@ class DriveBackupManager(
             .build()
     }
 
-    private fun findBackupFileId(drive: Drive): String? =
-        drive.files().list()
-            .setQ("name='$BACKUP_FILE_NAME' and trashed=false")
-            .setSpaces(APP_DATA_FOLDER)
-            .setFields("files(id, name)")
-            .execute()
-            .files
-            ?.firstOrNull()
-            ?.id
+    private fun findFileId(drive: Drive, space: String): String? =
+        runCatching {
+            drive.files().list()
+                .setQ("name='$BACKUP_FILE_NAME' and trashed=false")
+                .setSpaces(space)
+                .setFields("files(id, name, modifiedTime)")
+                .execute()
+                .files
+                ?.firstOrNull()
+                ?.id
+        }.getOrNull()
 
     companion object {
         private const val BACKUP_FILE_NAME = "oneclickcopy_backup.json"
         private const val MIME_TYPE = "application/json"
         private const val APP_DATA_FOLDER = "appDataFolder"
+        private const val DRIVE_SPACE = "drive"
     }
 }
 
-/** Typed backup failures so the UI can react without string matching. */
+/** Typed backup failures so callers can react without string matching. */
 sealed class BackupError(message: String) : Exception(message) {
     data object NotSignedIn : BackupError("Not signed in")
     data object NoBackupFound : BackupError("No backup found")

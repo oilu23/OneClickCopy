@@ -66,6 +66,16 @@ android {
         unitTests {
             isIncludeAndroidResources = true
             isReturnDefaultValues = true
+            all {
+                // Robolectric reflects into JDK internals; JDK 17's module system
+                // blocks this without explicit opens.
+                it.jvmArgs(
+                    "--add-opens=java.base/java.io=ALL-UNNAMED",
+                    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                    "--add-opens=java.base/java.util=ALL-UNNAMED",
+                    "--add-opens=java.base/java.net=ALL-UNNAMED",
+                )
+            }
         }
     }
 
@@ -115,6 +125,9 @@ dependencies {
 
     implementation(libs.reorderable)
 
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.lifecycle.process)
+
     implementation(libs.play.services.auth)
     implementation(libs.google.api.client.android)
     implementation(libs.google.api.services.drive)
@@ -127,6 +140,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.room.testing)
     testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.androidx.work.testing)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)

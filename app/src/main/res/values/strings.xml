@@ -50,6 +50,26 @@
     <string name="snippet_drag_handle">Reorder \"%1$s\"</string>
     <string name="snippet_mark_uncopied">Mark as not copied</string>
 
+    <!-- Sync status -->
+    <string name="sync_signed_out">Not backed up</string>
+    <string name="sync_up_to_date">Backed up</string>
+    <string name="sync_pending">Saving…</string>
+    <string name="sync_in_progress">Backing up…</string>
+    <string name="sync_waiting_network">Offline</string>
+    <string name="sync_failed_short">Sync issue</string>
+    <string name="sync_last_synced">Backed up %1$s</string>
+    <string name="sync_account_menu">Account and backup</string>
+    <string name="sync_now">Back up now</string>
+    <string name="sync_restore_completed">Restored %1$d documents from your account</string>
+    <string name="sync_signed_in_as">Signed in as %1$s</string>
+    <string name="sync_sign_in_prompt">Sign in to back up your notes</string>
+
+    <string name="transfer_export">Export to file</string>
+    <string name="transfer_import">Import from file</string>
+    <string name="transfer_exported">Exported %1$d documents</string>
+    <string name="transfer_imported">Imported %1$d documents</string>
+    <string name="transfer_failed">%1$s</string>
+
     <!-- Backup -->
     <string name="backup_sign_in">Sign in with Google</string>
     <string name="backup_sign_out">Sign out</string>

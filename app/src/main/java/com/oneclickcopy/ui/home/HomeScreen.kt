@@ -14,12 +14,28 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
+import com.oneclickcopy.data.DocumentTransfer
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -52,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.oneclickcopy.R
 import com.oneclickcopy.data.DocumentEntity
+import com.oneclickcopy.sync.SyncState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,7 +82,28 @@ fun HomeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     var isSearchActive by remember { mutableStateOf(false) }
+    var accountMenuExpanded by remember { mutableStateOf(false) }
     val searchFocusRequester = remember { FocusRequester() }
+
+    val signInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            task.getResult(ApiException::class.java)
+            viewModel.onSignInSucceeded()
+        } catch (e: ApiException) {
+            viewModel.onSignInFailed("Sign-in failed (code ${e.statusCode})")
+        }
+    }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument(DocumentTransfer.MIME_TYPE),
+    ) { uri -> uri?.let(viewModel::onExportTo) }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri -> uri?.let(viewModel::onImportFrom) }
 
     val deletedMessage = stringResource(R.string.home_deleted_message)
     val undoLabel = stringResource(R.string.home_undo)
@@ -81,6 +119,16 @@ fun HomeScreen(
                 if (result == SnackbarResult.ActionPerformed) {
                     viewModel.onUndoDelete(current.document)
                 }
+                viewModel.consumeEvent()
+            }
+            is HomeEvent.RestoreCompleted -> {
+                snackbarHostState.showSnackbar(
+                    "Restored ${current.inserted + current.updated} documents"
+                )
+                viewModel.consumeEvent()
+            }
+            is HomeEvent.Message -> {
+                snackbarHostState.showSnackbar(current.text)
                 viewModel.consumeEvent()
             }
             is HomeEvent.Error -> {
@@ -124,6 +172,12 @@ fun HomeScreen(
                     }
                 },
                 actions = {
+                    if (!isSearchActive) {
+                        SyncStatusChip(
+                            state = uiState.syncState,
+                            modifier = Modifier.padding(end = 4.dp),
+                        )
+                    }
                     IconButton(
                         onClick = {
                             if (isSearchActive) viewModel.onSearchQueryChanged("")
@@ -137,6 +191,80 @@ fun HomeScreen(
                                 else R.string.home_search_open
                             ),
                         )
+                    }
+                    Box {
+                        IconButton(onClick = { accountMenuExpanded = true }) {
+                            Icon(
+                                Icons.Default.AccountCircle,
+                                contentDescription = stringResource(R.string.sync_account_menu),
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = accountMenuExpanded,
+                            onDismissRequest = { accountMenuExpanded = false },
+                        ) {
+                            if (!uiState.isSignedIn) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.backup_sign_in)) },
+                                    leadingIcon = { Icon(Icons.Default.AccountCircle, null) },
+                                    onClick = {
+                                        accountMenuExpanded = false
+                                        signInLauncher.launch(viewModel.signInIntent())
+                                    },
+                                )
+                            } else {
+                                uiState.accountEmail?.let { email ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                stringResource(R.string.sync_signed_in_as, email),
+                                                style = MaterialTheme.typography.bodySmall,
+                                            )
+                                        },
+                                        onClick = { },
+                                        enabled = false,
+                                    )
+                                    HorizontalDivider()
+                                }
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.sync_now)) },
+                                    leadingIcon = { Icon(Icons.Default.CloudUpload, null) },
+                                    onClick = {
+                                        accountMenuExpanded = false
+                                        viewModel.onSyncNow()
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.backup_sign_out)) },
+                                    leadingIcon = { Icon(Icons.Default.Logout, null) },
+                                    onClick = {
+                                        accountMenuExpanded = false
+                                        viewModel.onSignOut()
+                                    },
+                                )
+                            }
+
+                            HorizontalDivider()
+
+                            // Always offered, signed in or not: a file copy works
+                            // with no account and no network.
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.transfer_export)) },
+                                leadingIcon = { Icon(Icons.Default.FileDownload, null) },
+                                onClick = {
+                                    accountMenuExpanded = false
+                                    exportLauncher.launch(DocumentTransfer.defaultFileName())
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.transfer_import)) },
+                                leadingIcon = { Icon(Icons.Default.FileUpload, null) },
+                                onClick = {
+                                    accountMenuExpanded = false
+                                    importLauncher.launch(arrayOf(DocumentTransfer.MIME_TYPE))
+                                },
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
