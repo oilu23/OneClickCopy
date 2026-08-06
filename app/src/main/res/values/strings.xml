@@ -14,6 +14,11 @@
     <string name="home_create_document">Create document</string>
     <string name="home_more_options">More options</string>
     <string name="home_delete">Delete</string>
+    <string name="home_delete_confirm_title">Delete document?</string>
+    <string name="home_delete_confirm_message">\"%1$s\" and its %2$d items will be deleted.</string>
+    <string name="home_delete_confirm_message_empty">\"%1$s\" will be deleted.</string>
+    <string name="home_delete_confirm_action">Delete</string>
+    <string name="home_delete_cancel">Cancel</string>
     <string name="home_deleted_message">Document deleted</string>
     <string name="home_undo">Undo</string>
 

@@ -41,8 +41,8 @@ android {
         applicationId = "com.oneclickcopy"
         minSdk = 26
         targetSdk = 34
-        versionCode = 5
-        versionName = "2.1.2"
+        versionCode = 6
+        versionName = "2.1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -184,6 +184,9 @@ dependencies {
     testImplementation(libs.androidx.room.testing)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.androidx.work.testing)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)

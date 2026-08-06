@@ -57,6 +57,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,6 +85,10 @@ fun HomeScreen(
 
     var isSearchActive by remember { mutableStateOf(false) }
     var accountMenuExpanded by remember { mutableStateOf(false) }
+
+    // Held by id rather than by entity so the pending deletion survives a
+    // configuration change and always reflects current content.
+    var pendingDeleteId by rememberSaveable { mutableStateOf<Long?>(null) }
     val searchFocusRequester = remember { FocusRequester() }
 
     val signInLauncher = rememberLauncherForActivityResult(
@@ -316,13 +321,38 @@ fun HomeScreen(
                             DocumentRow(
                                 document = document,
                                 onClick = { onDocumentClick(document.id) },
-                                onDelete = { viewModel.onDeleteDocument(document) },
+                                onDelete = { pendingDeleteId = document.id },
                             )
                         }
                     }
                 }
             }
         }
+    }
+
+    // Resolved from current state so the dialog cannot show a stale title.
+    val documentPendingDelete = pendingDeleteId?.let { id ->
+        uiState.documents.firstOrNull { it.id == id }
+    }
+
+    // Dismiss by itself if the document disappears while the dialog is open,
+    // for example because a sync removed it. Done in an effect rather than
+    // during composition, which must stay free of side effects.
+    LaunchedEffect(pendingDeleteId, documentPendingDelete) {
+        if (pendingDeleteId != null && documentPendingDelete == null) {
+            pendingDeleteId = null
+        }
+    }
+
+    if (documentPendingDelete != null) {
+        DeleteDocumentDialog(
+            document = documentPendingDelete,
+            onConfirm = {
+                viewModel.onDeleteDocument(documentPendingDelete)
+                pendingDeleteId = null
+            },
+            onDismiss = { pendingDeleteId = null },
+        )
     }
 }
 
