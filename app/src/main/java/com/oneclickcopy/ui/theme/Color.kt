@@ -2,18 +2,30 @@ package com.oneclickcopy.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Dark palette — the app's primary identity.
+val Teal80 = Color(0xFF4FD8D8)
+val Teal40 = Color(0xFF00696B)
+val TealContainerDark = Color(0xFF004F50)
+val TealContainerLight = Color(0xFF9CF1F1)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val Neutral10 = Color(0xFF121212)
+val Neutral15 = Color(0xFF1B1B1B)
+val Neutral20 = Color(0xFF242424)
+val Neutral25 = Color(0xFF2E2E2E)
+val Neutral90 = Color(0xFFE3E3E3)
+val Neutral95 = Color(0xFFF1F1F1)
+val Neutral99 = Color(0xFFFCFCFC)
 
-// Custom colors for OneClickCopy
-val DarkBackground = Color(0xFF121212)
-val DarkSurface = Color(0xFF1E1E1E)
-val OnDark = Color(0xFFFFFFFF)
-val AccentPurple = Color(0xFF9C27B0)
-val ToggleGreen = Color(0xFF4CAF50)
-val ToggleRed = Color(0xFFB71C1C)
+val Grey60 = Color(0xFF919191)
+val Grey30 = Color(0xFF474747)
+
+val ErrorDark = Color(0xFFFFB4AB)
+val ErrorLight = Color(0xFFBA1A1A)
+val ErrorContainerDark = Color(0xFF93000A)
+val ErrorContainerLight = Color(0xFFFFDAD6)
+
+/** Semantic accents for the edit/copy mode toggle. */
+val CopyModeGreen = Color(0xFF2E7D32)
+val CopyModeGreenLight = Color(0xFF66BB6A)
+val EditModeAmber = Color(0xFF9A6700)
+val EditModeAmberLight = Color(0xFFFFB74D)

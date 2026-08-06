@@ -1,4 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">OneClickCopy</string>
+
+    <!-- Home screen -->
+    <string name="home_title">Documents</string>
+    <string name="home_search_hint">Search documents</string>
+    <string name="home_search_open">Search</string>
+    <string name="home_search_close">Close search</string>
+    <string name="home_empty_title">No documents yet</string>
+    <string name="home_empty_subtitle">Tap + to create your first list</string>
+    <string name="home_no_results_title">No matches</string>
+    <string name="home_no_results_subtitle">No documents match \"%1$s\"</string>
+    <string name="home_create_document">Create document</string>
+    <string name="home_more_options">More options</string>
+    <string name="home_delete">Delete</string>
+    <string name="home_deleted_message">Document deleted</string>
+    <string name="home_undo">Undo</string>
+
+    <!-- Document list item -->
+    <string name="document_untitled">Untitled</string>
+    <plurals name="document_item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <string name="document_updated">Updated %1$s</string>
+
+    <!-- Editor screen -->
+    <string name="editor_back">Back</string>
+    <string name="editor_title_hint">Document title</string>
+    <string name="editor_text_hint">Enter your text here.\nEach line becomes a copy item.</string>
+    <string name="editor_mode_edit">EDIT</string>
+    <string name="editor_mode_copy">COPY</string>
+    <string name="editor_switch_to_copy">Switch to copy mode</string>
+    <string name="editor_switch_to_edit">Switch to edit mode</string>
+    <string name="editor_reset_checks">Reset all checkmarks</string>
+    <string name="editor_progress">%1$d of %2$d copied</string>
+    <string name="editor_all_copied">All items copied</string>
+    <string name="editor_checks_reset">Checkmarks reset</string>
+    <string name="editor_copied_toast">Copied</string>
+    <string name="editor_empty_copy_mode">Nothing to copy yet</string>
+    <string name="editor_empty_copy_mode_hint">Switch to edit mode and add some lines</string>
+
+    <!-- Snippet row -->
+    <string name="snippet_copy_action">Copy \"%1$s\"</string>
+    <string name="snippet_copied">Copied</string>
+    <string name="snippet_not_copied">Not copied</string>
+
+    <!-- Errors -->
+    <string name="error_create_document">Could not create document</string>
+    <string name="error_delete_document">Could not delete document</string>
+    <string name="error_restore_document">Could not restore document</string>
+    <string name="error_save_document">Could not save document</string>
+
+    <!-- Sync status -->
+    <string name="sync_signed_out">Not backed up</string>
+    <string name="sync_up_to_date">Backed up</string>
+    <string name="sync_pending">Saving…</string>
+    <string name="sync_in_progress">Backing up…</string>
+    <string name="sync_waiting_network">Offline</string>
+    <string name="sync_failed_short">Sync issue</string>
+    <string name="sync_last_synced">Backed up %1$s</string>
+    <string name="sync_account_menu">Account and backup</string>
+    <string name="sync_now">Back up now</string>
+    <string name="sync_restore_completed">Restored %1$d documents from your account</string>
+    <string name="sync_signed_in_as">Signed in as %1$s</string>
+
+    <string name="transfer_export">Export to file</string>
+    <string name="transfer_import">Import from file</string>
+    <string name="transfer_exported">Exported %1$d documents</string>
+    <string name="transfer_imported">Imported %1$d documents</string>
+
+    <!-- Backup -->
+    <string name="backup_sign_in">Sign in with Google</string>
+    <string name="backup_sign_out">Sign out</string>
+    <string name="backup_sign_in_failed">Sign-in failed: %1$s</string>
+    <string name="backup_signed_out">Signed out</string>
+    <string name="backup_restore_failed">Restore failed: %1$s</string>
 </resources>
