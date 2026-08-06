@@ -1,11 +1,9 @@
 package com.oneclickcopy.ui.util
 
 import android.content.ClipData
-import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
-import android.os.PersistableBundle
 import androidx.core.content.getSystemService
 
 /**
@@ -20,19 +18,6 @@ object ClipboardHelper {
     fun copy(context: Context, text: String, label: String = "OneClickCopy") {
         val manager = context.getSystemService<ClipboardManager>() ?: return
         val clip = ClipData.newPlainText(label, text)
-        manager.setPrimaryClip(clip)
-    }
-
-    /** Copies text flagged as sensitive so it is hidden from clipboard previews. */
-    fun copySensitive(context: Context, text: String, label: String = "OneClickCopy") {
-        val manager = context.getSystemService<ClipboardManager>() ?: return
-        val clip = ClipData.newPlainText(label, text).apply {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                description.extras = PersistableBundle().apply {
-                    putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
-                }
-            }
-        }
         manager.setPrimaryClip(clip)
     }
 

@@ -1,12 +1,13 @@
 package com.oneclickcopy.sync
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.oneclickcopy.backup.BackupError
 import com.oneclickcopy.backup.DriveBackupManager
@@ -14,11 +15,9 @@ import com.oneclickcopy.backup.toBackup
 import com.oneclickcopy.backup.toEntity
 import com.oneclickcopy.data.DocumentRepository
 import com.oneclickcopy.data.MergeResult
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
 
 /**
@@ -68,8 +67,18 @@ class SyncManager(
             _state.value = SyncState.SignedOut
             return
         }
-        _state.value = SyncState.Pending
+        // Surface the offline case explicitly. WorkManager still holds the request
+        // and sends it when connectivity returns, but the user should be able to
+        // see why "Backed up" has not appeared yet.
+        _state.value = if (isOnline()) SyncState.Pending else SyncState.WaitingForNetwork
         enqueue(delayMillis = DEBOUNCE_MS)
+    }
+
+    private fun isOnline(): Boolean {
+        val manager = context.getSystemService(ConnectivityManager::class.java)
+            ?: return true
+        val capabilities = manager.getNetworkCapabilities(manager.activeNetwork)
+        return capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
     }
 
     /** Uploads immediately, e.g. when the app moves to the background. */
@@ -101,26 +110,6 @@ class SyncManager(
         )
     }
 
-    /** Observes worker progress and projects it onto [SyncState]. */
-    fun observeWorkState(): kotlinx.coroutines.flow.Flow<SyncState> =
-        workManager.getWorkInfosForUniqueWorkLiveDataFlow(UNIQUE_WORK_NAME)
-
-    private fun WorkManager.getWorkInfosForUniqueWorkLiveDataFlow(
-        name: String,
-    ): kotlinx.coroutines.flow.Flow<SyncState> =
-        getWorkInfosForUniqueWorkFlow(name).map { infos ->
-            val info = infos.firstOrNull()
-            when {
-                !driveBackupManager.isSignedIn() -> SyncState.SignedOut
-                info == null -> SyncState.Idle(preferences.lastSyncedAt)
-                info.state == WorkInfo.State.RUNNING -> SyncState.Syncing
-                info.state == WorkInfo.State.ENQUEUED -> SyncState.Pending
-                info.state == WorkInfo.State.SUCCEEDED -> SyncState.Idle(preferences.lastSyncedAt)
-                info.state == WorkInfo.State.FAILED -> SyncState.Failed("Sync failed")
-                else -> SyncState.Idle(preferences.lastSyncedAt)
-            }
-        }
-
     /**
      * Performs the actual upload. Called from [SyncWorker].
      *
@@ -135,7 +124,11 @@ class SyncManager(
                 _state.value = SyncState.Idle(preferences.lastSyncedAt)
             }
             .onFailure { error ->
-                _state.value = SyncState.Failed(error.message ?: "Sync failed")
+                _state.value = if (!isOnline()) {
+                    SyncState.WaitingForNetwork
+                } else {
+                    SyncState.Failed(error.message.orEmpty())
+                }
             }
     }
 

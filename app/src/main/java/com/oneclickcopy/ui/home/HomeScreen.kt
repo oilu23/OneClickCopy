@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import com.oneclickcopy.data.DocumentTransfer
+import com.oneclickcopy.ui.common.resolve
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -93,7 +94,7 @@ fun HomeScreen(
             task.getResult(ApiException::class.java)
             viewModel.onSignInSucceeded()
         } catch (e: ApiException) {
-            viewModel.onSignInFailed("Sign-in failed (code ${e.statusCode})")
+            viewModel.onSignInFailed(e.statusCode.toString())
         }
     }
 
@@ -108,6 +109,13 @@ fun HomeScreen(
     val deletedMessage = stringResource(R.string.home_deleted_message)
     val undoLabel = stringResource(R.string.home_undo)
 
+    // UiText must be resolved inside composition, not in the LaunchedEffect body.
+    val messageText = when (val current = event) {
+        is HomeEvent.Message -> current.text.resolve()
+        is HomeEvent.Error -> current.message.resolve()
+        else -> null
+    }
+
     LaunchedEffect(event) {
         when (val current = event) {
             is HomeEvent.DocumentDeleted -> {
@@ -121,18 +129,12 @@ fun HomeScreen(
                 }
                 viewModel.consumeEvent()
             }
-            is HomeEvent.RestoreCompleted -> {
-                snackbarHostState.showSnackbar(
-                    "Restored ${current.inserted + current.updated} documents"
-                )
-                viewModel.consumeEvent()
-            }
             is HomeEvent.Message -> {
-                snackbarHostState.showSnackbar(current.text)
+                snackbarHostState.showSnackbar(messageText.orEmpty())
                 viewModel.consumeEvent()
             }
             is HomeEvent.Error -> {
-                snackbarHostState.showSnackbar(current.message)
+                snackbarHostState.showSnackbar(messageText.orEmpty())
                 viewModel.consumeEvent()
             }
             null -> Unit

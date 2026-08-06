@@ -60,6 +60,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.oneclickcopy.R
+import com.oneclickcopy.ui.common.resolve
 import com.oneclickcopy.ui.theme.LocalModeColors
 import com.oneclickcopy.ui.theme.OneClickCopyTheme
 import com.oneclickcopy.ui.util.ClipboardHelper
@@ -83,6 +84,7 @@ fun EditorScreen(
 
     val copiedMessage = stringResource(R.string.editor_copied_toast)
     val resetMessage = stringResource(R.string.editor_checks_reset)
+    val errorText = (event as? EditorEvent.Error)?.message?.resolve()
 
     // Flush pending edits when the screen leaves composition, so the last
     // keystrokes are never lost to the debounce window.
@@ -103,7 +105,7 @@ fun EditorScreen(
                 viewModel.consumeEvent()
             }
             is EditorEvent.Error -> {
-                snackbarHostState.showSnackbar(current.message)
+                snackbarHostState.showSnackbar(errorText.orEmpty())
                 viewModel.consumeEvent()
             }
             null -> Unit

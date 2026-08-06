@@ -14,10 +14,6 @@ interface DocumentDao {
     @Query("SELECT * FROM documents ORDER BY updatedAt DESC")
     fun observeAll(): Flow<List<DocumentEntity>>
 
-    /** Reactive single-document read so the editor survives process death. */
-    @Query("SELECT * FROM documents WHERE id = :id")
-    fun observeById(id: Long): Flow<DocumentEntity?>
-
     @Query("SELECT * FROM documents WHERE id = :id")
     suspend fun getById(id: Long): DocumentEntity?
 
@@ -35,9 +31,6 @@ interface DocumentDao {
 
     @Delete
     suspend fun delete(document: DocumentEntity)
-
-    @Query("DELETE FROM documents WHERE id = :id")
-    suspend fun deleteById(id: Long)
 
     /**
      * Deletes documents that were auto-created but never given a title or body.

@@ -12,6 +12,8 @@ import com.oneclickcopy.data.DocumentRepository
 import com.oneclickcopy.data.DocumentTransfer
 import android.net.Uri
 import com.oneclickcopy.sync.SyncManager
+import com.oneclickcopy.ui.common.UiText
+import com.oneclickcopy.R
 import com.oneclickcopy.sync.SyncState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,9 +38,8 @@ data class HomeUiState(
 
 sealed interface HomeEvent {
     data class DocumentDeleted(val document: DocumentEntity) : HomeEvent
-    data class Message(val text: String) : HomeEvent
-    data class Error(val message: String) : HomeEvent
-    data class RestoreCompleted(val inserted: Int, val updated: Int) : HomeEvent
+    data class Message(val text: UiText) : HomeEvent
+    data class Error(val message: UiText) : HomeEvent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -91,22 +92,29 @@ class HomeViewModel(
         viewModelScope.launch {
             syncManager.onSignedIn()
                 .onSuccess { merge ->
-                    if (merge.inserted > 0 || merge.updated > 0) {
-                        _events.value = HomeEvent.RestoreCompleted(merge.inserted, merge.updated)
+                    val restored = merge.inserted + merge.updated
+                    if (restored > 0) {
+                        _events.value = HomeEvent.Message(
+                            UiText.res(R.string.sync_restore_completed, restored)
+                        )
                     }
                 }
-                .onFailure { _events.value = HomeEvent.Error(it.message ?: "Restore failed") }
+                .onFailure {
+                    _events.value = HomeEvent.Error(
+                        UiText.res(R.string.backup_restore_failed, it.localizedMessage.orEmpty())
+                    )
+                }
         }
     }
 
-    fun onSignInFailed(message: String) {
-        _events.value = HomeEvent.Error(message)
+    fun onSignInFailed(detail: String) {
+        _events.value = HomeEvent.Error(UiText.res(R.string.backup_sign_in_failed, detail))
     }
 
     fun onSignOut() {
         viewModelScope.launch {
             syncManager.onSignOut()
-            _events.value = HomeEvent.Message("Signed out")
+            _events.value = HomeEvent.Message(UiText.res(R.string.backup_signed_out))
         }
     }
 
@@ -123,7 +131,7 @@ class HomeViewModel(
             runCatching { repository.createDocument() }
                 .onSuccess(onCreated)
                 .onFailure {
-                    _events.value = HomeEvent.Error(it.message ?: "Could not create document")
+                    _events.value = HomeEvent.Error(UiText.res(R.string.error_create_document))
                 }
         }
     }
@@ -133,7 +141,7 @@ class HomeViewModel(
             runCatching { repository.deleteDocument(document) }
                 .onSuccess { _events.value = HomeEvent.DocumentDeleted(document) }
                 .onFailure {
-                    _events.value = HomeEvent.Error(it.message ?: "Could not delete document")
+                    _events.value = HomeEvent.Error(UiText.res(R.string.error_delete_document))
                 }
         }
     }
@@ -142,7 +150,7 @@ class HomeViewModel(
         viewModelScope.launch {
             runCatching { repository.restoreDocument(document) }
                 .onFailure {
-                    _events.value = HomeEvent.Error(it.message ?: "Could not restore document")
+                    _events.value = HomeEvent.Error(UiText.res(R.string.error_restore_document))
                 }
         }
     }
@@ -154,8 +162,14 @@ class HomeViewModel(
     fun onExportTo(uri: Uri) {
         viewModelScope.launch {
             documentTransfer.exportTo(uri)
-                .onSuccess { _events.value = HomeEvent.Message("Exported $it documents") }
-                .onFailure { _events.value = HomeEvent.Error(it.message ?: "Export failed") }
+                .onSuccess {
+                    _events.value = HomeEvent.Message(UiText.res(R.string.transfer_exported, it))
+                }
+                .onFailure {
+                    _events.value = HomeEvent.Error(
+                        UiText.Dynamic(it.localizedMessage.orEmpty())
+                    )
+                }
         }
     }
 
@@ -164,10 +178,14 @@ class HomeViewModel(
             documentTransfer.importFrom(uri)
                 .onSuccess {
                     _events.value = HomeEvent.Message(
-                        "Imported ${it.inserted + it.updated} documents"
+                        UiText.res(R.string.transfer_imported, it.inserted + it.updated)
                     )
                 }
-                .onFailure { _events.value = HomeEvent.Error(it.message ?: "Import failed") }
+                .onFailure {
+                    _events.value = HomeEvent.Error(
+                        UiText.Dynamic(it.localizedMessage.orEmpty())
+                    )
+                }
         }
     }
 

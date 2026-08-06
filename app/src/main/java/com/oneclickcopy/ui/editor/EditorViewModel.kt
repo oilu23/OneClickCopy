@@ -11,6 +11,8 @@ import com.oneclickcopy.domain.CopiedStateCodec
 import com.oneclickcopy.domain.Snippet
 import com.oneclickcopy.domain.SnippetKey
 import com.oneclickcopy.domain.SnippetParser
+import com.oneclickcopy.ui.common.UiText
+import com.oneclickcopy.R
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,7 +41,7 @@ data class EditorUiState(
 sealed interface EditorEvent {
     data class Copied(val text: String) : EditorEvent
     data object ChecksReset : EditorEvent
-    data class Error(val message: String) : EditorEvent
+    data class Error(val message: UiText) : EditorEvent
 }
 
 class EditorViewModel(
@@ -209,7 +211,7 @@ class EditorViewModel(
                 copiedKeys = copiedKeys,
             )
         }.onFailure {
-            _events.value = EditorEvent.Error(it.message ?: "Could not save document")
+            _events.value = EditorEvent.Error(UiText.res(R.string.error_save_document))
         }
     }
 

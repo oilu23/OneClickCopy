@@ -43,8 +43,6 @@ class DocumentRepository(
         }
     }
 
-    fun observeDocument(id: Long): Flow<DocumentEntity?> = dao.observeById(id)
-
     suspend fun getDocument(id: Long): DocumentEntity? =
         withContext(ioDispatcher) { dao.getById(id) }
 
