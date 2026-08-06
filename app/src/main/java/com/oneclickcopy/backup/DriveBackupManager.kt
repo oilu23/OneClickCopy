@@ -28,7 +28,7 @@ import java.io.ByteArrayOutputStream
  * developer quota. The requested scope (`drive.appdata`) is classified
  * non-sensitive by Google, so it requires no security assessment.
  */
-class DriveBackupManager(
+open class DriveBackupManager(
     private val context: Context,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
@@ -57,11 +57,11 @@ class DriveBackupManager(
         GoogleSignIn.getClient(context, signInOptions)
     }
 
-    fun signedInAccount(): GoogleSignInAccount? = GoogleSignIn.getLastSignedInAccount(context)
+    open fun signedInAccount(): GoogleSignInAccount? = GoogleSignIn.getLastSignedInAccount(context)
 
-    fun isSignedIn(): Boolean = signedInAccount() != null
+    open fun isSignedIn(): Boolean = signedInAccount() != null
 
-    fun accountEmail(): String? = signedInAccount()?.email
+    open fun accountEmail(): String? = signedInAccount()?.email
 
     fun signInIntent(): Intent = signInClient.signInIntent
 
@@ -70,7 +70,7 @@ class DriveBackupManager(
         Unit
     }
 
-    suspend fun upload(documents: List<BackupDocument>): Result<Unit> =
+    open suspend fun upload(documents: List<BackupDocument>): Result<Unit> =
         withContext(ioDispatcher) {
             runCatching {
                 val drive = driveService() ?: throw BackupError.NotSignedIn
@@ -103,7 +103,7 @@ class DriveBackupManager(
      * visible to `appDataFolder` queries, so without this fallback an upgrading
      * user would appear to have no backup at all.
      */
-    suspend fun download(): Result<List<BackupDocument>> = withContext(ioDispatcher) {
+    open suspend fun download(): Result<List<BackupDocument>> = withContext(ioDispatcher) {
         runCatching {
             val drive = driveService() ?: throw BackupError.NotSignedIn
 

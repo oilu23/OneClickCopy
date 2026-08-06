@@ -16,7 +16,7 @@ import java.util.UUID
  * so UI code never touches Room, every write happens on an IO dispatcher, and the
  * behaviour is testable with an in-memory database.
  */
-class DocumentRepository(
+open class DocumentRepository(
     private val dao: DocumentDao,
     private val ioDispatcher: CoroutineDispatcher,
 ) {
@@ -137,7 +137,7 @@ class DocumentRepository(
             MergeResult(inserted = inserted, updated = updated, skipped = skipped)
         }
 
-    suspend fun getAllDocuments(): List<DocumentEntity> =
+    open suspend fun getAllDocuments(): List<DocumentEntity> =
         withContext(ioDispatcher) { dao.getAllOnce() }
 
     private fun DocumentEntity.copyOf(updatedAt: Long) = copy(updatedAt = updatedAt)

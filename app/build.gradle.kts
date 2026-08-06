@@ -41,8 +41,8 @@ android {
         applicationId = "com.oneclickcopy"
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "2.1"
+        versionCode = 4
+        versionName = "2.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -91,6 +91,18 @@ android {
 
     composeOptions {
         kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
+    }
+
+    // Room's MigrationTestHelper resolves exported schemas from assets. Local
+    // unit tests do not package assets the way instrumented tests do, so the
+    // schema directory is added to the test resources instead.
+    sourceSets {
+        getByName("test") {
+            resources.srcDir("$projectDir/schemas")
+        }
+        getByName("androidTest") {
+            assets.srcDir("$projectDir/schemas")
+        }
     }
 
     testOptions {

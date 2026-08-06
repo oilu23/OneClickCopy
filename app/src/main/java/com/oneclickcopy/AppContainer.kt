@@ -23,7 +23,11 @@ interface AppContainer {
     val documentTransfer: DocumentTransfer
 }
 
-class DefaultAppContainer(private val context: Context) : AppContainer {
+class DefaultAppContainer(context: Context) : AppContainer {
+
+    // Store the application context explicitly. These objects outlive any single
+    // screen, so holding an Activity here would leak it across rotations.
+    private val context: Context = context.applicationContext
 
     private val database by lazy { AppDatabase.get(context) }
 

@@ -117,8 +117,14 @@ class SyncManager(
      */
     suspend fun performUpload(): Result<Unit> {
         _state.value = SyncState.Syncing
-        val documents = repository.getAllDocuments().map { it.toBackup() }
-        return driveBackupManager.upload(documents)
+        // The database read is inside the guarded block: a failure here (disk
+        // full, corruption) previously escaped performUpload, propagated out of
+        // SyncWorker.doWork, and killed the worker while leaving the UI showing
+        // "Syncing" forever.
+        return runCatching {
+            repository.getAllDocuments().map { it.toBackup() }
+        }
+            .mapCatching { documents -> driveBackupManager.upload(documents).getOrThrow() }
             .onSuccess {
                 preferences.lastSyncedAt = System.currentTimeMillis()
                 _state.value = SyncState.Idle(preferences.lastSyncedAt)
