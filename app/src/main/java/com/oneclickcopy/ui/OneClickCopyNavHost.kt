@@ -73,11 +73,12 @@ fun OneClickCopyNavHost(
             EditorScreen(
                 viewModel = editorViewModel,
                 onNavigateBack = {
-                    editorViewModel.saveNow()
-                    // Guarded: repeated taps on the back arrow, or the arrow
-                    // racing the system back gesture, must not pop the document
-                    // list off the stack and leave a blank screen.
-                    navController.popBackStackOnce(backStackEntry)
+                    // A newly opened destination may still be STARTED. Do not
+                    // save or latch the editor as leaving unless Navigation
+                    // actually accepts the pop; the user must be able to retry.
+                    navController.popBackStackOnce(backStackEntry).also { popped ->
+                        if (popped) editorViewModel.saveNow()
+                    }
                 },
             )
         }

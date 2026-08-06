@@ -45,10 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,6 +61,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.oneclickcopy.R
+import com.oneclickcopy.ui.BackNavigationGate
 import com.oneclickcopy.ui.common.resolve
 import com.oneclickcopy.ui.theme.LocalModeColors
 import com.oneclickcopy.ui.theme.OneClickCopyTheme
@@ -75,7 +73,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun EditorScreen(
     viewModel: EditorViewModel,
-    onNavigateBack: () -> Unit,
+    onNavigateBack: () -> Boolean,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -116,20 +114,14 @@ fun EditorScreen(
         }
     }
 
-    // Every exit from this screen funnels through one latched callback, so the
-    // back arrow, the system back gesture, and the missing-document redirect
-    // cannot each pop the stack. Popping more than once removes the document
-    // list too and leaves the user on a blank screen.
-    var isLeaving by rememberSaveable { mutableStateOf(false) }
-    val leaveEditor: () -> Unit = {
-        if (!isLeaving) {
-            isLeaving = true
-            onNavigateBack()
-        }
-    }
+    // The gate latches only after Navigation accepts the pop. Right after this
+    // screen opens the destination can still be STARTED; popBackStackOnce then
+    // correctly returns false, and Back must stay enabled for a retry.
+    val exitGate = remember { BackNavigationGate() }
+    val leaveEditor: () -> Unit = { exitGate.tryLeave(onNavigateBack) }
 
     // Intercept the system back gesture so it uses the same guarded path.
-    BackHandler(enabled = !isLeaving) { leaveEditor() }
+    BackHandler(enabled = !exitGate.isLeaving) { leaveEditor() }
 
     // A missing document (deleted elsewhere, or a stale link) sends the user back.
     LaunchedEffect(uiState.documentExists, uiState.isLoading) {
@@ -166,7 +158,7 @@ fun EditorScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = leaveEditor, enabled = !isLeaving) {
+                    IconButton(onClick = leaveEditor, enabled = !exitGate.isLeaving) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.editor_back),
