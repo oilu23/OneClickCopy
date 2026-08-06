@@ -55,6 +55,9 @@ class HomeViewModel(
     private val _events = MutableStateFlow<HomeEvent?>(null)
     val events: StateFlow<HomeEvent?> = _events.asStateFlow()
 
+    /** Prevents a double tap on the create button from making two documents. */
+    private var isCreatingDocument = false
+
     val uiState: StateFlow<HomeUiState> =
         combine(
             repository.observeDocuments(),
@@ -127,12 +130,19 @@ class HomeViewModel(
     }
 
     fun onCreateDocument(onCreated: (Long) -> Unit) {
+        // Guard against a double tap on the create button producing two
+        // documents: the second tap lands before navigation removes the button
+        // from the screen.
+        if (isCreatingDocument) return
+        isCreatingDocument = true
+
         viewModelScope.launch {
             runCatching { repository.createDocument() }
                 .onSuccess(onCreated)
                 .onFailure {
                     _events.value = HomeEvent.Error(UiText.res(R.string.error_create_document))
                 }
+            isCreatingDocument = false
         }
     }
 

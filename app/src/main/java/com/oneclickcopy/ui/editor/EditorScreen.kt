@@ -3,6 +3,7 @@ package com.oneclickcopy.ui.editor
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,7 +45,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -112,8 +116,26 @@ fun EditorScreen(
         }
     }
 
-    if (!uiState.documentExists && !uiState.isLoading) {
-        LaunchedEffect(Unit) { onNavigateBack() }
+    // Every exit from this screen funnels through one latched callback, so the
+    // back arrow, the system back gesture, and the missing-document redirect
+    // cannot each pop the stack. Popping more than once removes the document
+    // list too and leaves the user on a blank screen.
+    var isLeaving by rememberSaveable { mutableStateOf(false) }
+    val leaveEditor: () -> Unit = {
+        if (!isLeaving) {
+            isLeaving = true
+            onNavigateBack()
+        }
+    }
+
+    // Intercept the system back gesture so it uses the same guarded path.
+    BackHandler(enabled = !isLeaving) { leaveEditor() }
+
+    // A missing document (deleted elsewhere, or a stale link) sends the user back.
+    LaunchedEffect(uiState.documentExists, uiState.isLoading) {
+        if (!uiState.documentExists && !uiState.isLoading) {
+            leaveEditor()
+        }
     }
 
     Scaffold(
@@ -144,7 +166,7 @@ fun EditorScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = leaveEditor, enabled = !isLeaving) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.editor_back),
