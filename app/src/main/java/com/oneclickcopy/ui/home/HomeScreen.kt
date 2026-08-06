@@ -171,9 +171,13 @@ fun HomeScreen(
                 }
                 else -> {
                     LazyColumn(
+                        // Bottom padding clears both the FAB and the system
+                        // navigation bar so the last row stays reachable.
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 8.dp,
-                            vertical = 8.dp,
+                            start = 8.dp,
+                            end = 8.dp,
+                            top = 8.dp,
+                            bottom = 96.dp,
                         ),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.fillMaxSize(),

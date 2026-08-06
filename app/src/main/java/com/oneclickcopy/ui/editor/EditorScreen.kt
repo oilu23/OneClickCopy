@@ -2,6 +2,7 @@ package com.oneclickcopy.ui.editor
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -148,6 +150,28 @@ fun EditorScreen(
                     }
                 },
                 actions = {
+                    // Reset lives beside the mode toggle rather than in a bottom
+                    // bar, where it sat directly above the system navigation
+                    // buttons and was easy to mis-tap.
+                    if (uiState.isCopyMode && uiState.totalCount > 0) {
+                        IconButton(
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.onResetChecks()
+                            },
+                            enabled = uiState.copiedCount > 0,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = stringResource(R.string.editor_reset_checks),
+                                tint = if (uiState.copiedCount > 0) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                },
+                            )
+                        }
+                    }
                     ModeToggle(
                         isCopyMode = uiState.isCopyMode,
                         onToggle = {
@@ -164,14 +188,10 @@ fun EditorScreen(
         },
         bottomBar = {
             if (uiState.isCopyMode && uiState.totalCount > 0) {
-                EditorBottomBar(
+                EditorProgressBar(
                     copied = uiState.copiedCount,
                     total = uiState.totalCount,
                     progress = uiState.progress,
-                    onReset = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.onResetChecks()
-                    },
                 )
             }
         },
@@ -256,7 +276,14 @@ private fun CopyModeList(
 
     androidx.compose.foundation.lazy.LazyColumn(
         state = listState,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(8.dp),
+        // Extra bottom padding so the final row can always be scrolled clear of
+        // the system navigation bar / gesture area.
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 8.dp,
+            end = 8.dp,
+            top = 8.dp,
+            bottom = 24.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -366,46 +393,48 @@ private fun ModeToggle(
     }
 }
 
+/**
+ * Slim progress strip shown at the bottom in copy mode.
+ *
+ * Contains no tap targets: the reset action moved to the top bar because a
+ * button here sits directly above the system navigation buttons/gesture bar and
+ * was easy to mis-tap. [navigationBarsPadding] keeps the text clear of the
+ * system bars under edge-to-edge.
+ */
 @Composable
-private fun EditorBottomBar(
+private fun EditorProgressBar(
     copied: Int,
     total: Int,
     progress: Float,
-    onReset: () -> Unit,
 ) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        label = "copyProgress",
+    )
+
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 3.dp,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding(),
+        ) {
             LinearProgressIndicator(
-                progress = { progress },
+                progress = { animatedProgress },
                 modifier = Modifier.fillMaxWidth(),
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = if (copied == total) {
-                        stringResource(R.string.editor_all_copied)
-                    } else {
-                        stringResource(R.string.editor_progress, copied, total)
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                IconButton(onClick = onReset) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = stringResource(R.string.editor_reset_checks),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
+            Text(
+                text = if (copied == total) {
+                    stringResource(R.string.editor_all_copied)
+                } else {
+                    stringResource(R.string.editor_progress, copied, total)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+            )
         }
     }
 }
