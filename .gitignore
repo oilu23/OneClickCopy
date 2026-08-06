@@ -14,3 +14,7 @@ local.properties
 !debug.keystore
 /app/release/
 .kotlin/
+
+# Signing config - never commit
+keystore.properties
+*.jks
