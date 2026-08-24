@@ -1,7 +1,7 @@
 package com.oneclickcopy.ui.theme
 
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -14,7 +14,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import androidx.activity.ComponentActivity
 
 private val DarkColors = darkColorScheme(
     primary = Teal80,
@@ -23,21 +22,34 @@ private val DarkColors = darkColorScheme(
     onPrimaryContainer = TealContainerLight,
     secondary = Teal80,
     onSecondary = Color(0xFF003737),
-    background = Neutral10,
-    onBackground = Neutral90,
-    surface = Neutral10,
-    onSurface = Neutral90,
-    surfaceVariant = Neutral20,
-    onSurfaceVariant = Grey60,
-    surfaceContainer = Neutral15,
-    surfaceContainerHigh = Neutral20,
-    surfaceContainerHighest = Neutral25,
-    outline = Grey30,
-    outlineVariant = Neutral25,
+    secondaryContainer = Ink20,
+    onSecondaryContainer = Mist90,
+    tertiary = Teal80,
+    onTertiary = Color(0xFF003737),
+    background = Ink00,
+    onBackground = Mist90,
+    surface = Ink00,
+    onSurface = Mist90,
+    surfaceVariant = Ink20,
+    onSurfaceVariant = Mist70,
+    surfaceDim = Ink00,
+    surfaceBright = Ink20,
+    surfaceContainerLowest = Ink00,
+    surfaceContainerLow = Ink10,
+    surfaceContainer = Ink15,
+    surfaceContainerHigh = Ink20,
+    surfaceContainerHighest = Ink25,
+    outline = Color(0xFF3E5557),
+    outlineVariant = Ink25,
+    inverseSurface = Mist90,
+    inverseOnSurface = Ink10,
+    inversePrimary = Teal40,
     error = ErrorDark,
     onError = Color(0xFF690005),
     errorContainer = ErrorContainerDark,
     onErrorContainer = ErrorContainerLight,
+    scrim = Color(0xFF000000),
+    surfaceTint = Teal80,
 )
 
 private val LightColors = lightColorScheme(
@@ -64,23 +76,31 @@ private val LightColors = lightColorScheme(
 data class ModeColors(
     val copyMode: Color,
     val editMode: Color,
+    val onCopyMode: Color,
+    val onEditMode: Color,
 )
 
 val LocalModeColors = staticCompositionLocalOf {
-    ModeColors(copyMode = CopyModeGreen, editMode = EditModeAmber)
+    ModeColors(
+        copyMode = CopyModeGreen,
+        editMode = EditModeAmber,
+        onCopyMode = Color.White,
+        onEditMode = Color.White,
+    )
 }
 
 /**
  * App theme.
  *
- * Unlike the original — which hardcoded dark and ignored its own [darkTheme]
- * parameter — this honours the system setting and supports Material You dynamic
- * color on Android 12+.
+ * Dark is the product look. Defaults do not follow the system light setting and
+ * do not pull Material You wallpaper colors, so the ink/teal palette stays
+ * consistent on every device. Previews and tests can still pass [darkTheme]
+ * or [dynamicColor] explicitly.
  */
 @Composable
 fun OneClickCopyTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    darkTheme: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -93,17 +113,28 @@ fun OneClickCopyTheme(
     }
 
     val modeColors = if (darkTheme) {
-        ModeColors(copyMode = CopyModeGreenLight, editMode = EditModeAmberLight)
+        ModeColors(
+            copyMode = CopyModeGreenLight,
+            editMode = EditModeAmberLight,
+            onCopyMode = OnCopyModeDark,
+            onEditMode = OnEditModeDark,
+        )
     } else {
-        ModeColors(copyMode = CopyModeGreen, editMode = EditModeAmber)
+        ModeColors(
+            copyMode = CopyModeGreen,
+            editMode = EditModeAmber,
+            onCopyMode = Color.White,
+            onEditMode = Color.White,
+        )
     }
 
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val activity = view.context as? ComponentActivity ?: return@SideEffect
-            WindowCompat.getInsetsController(activity.window, view)
-                .isAppearanceLightStatusBars = !darkTheme
+            val controller = WindowCompat.getInsetsController(activity.window, view)
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 

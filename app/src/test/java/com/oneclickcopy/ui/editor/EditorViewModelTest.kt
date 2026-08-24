@@ -209,4 +209,92 @@ class EditorViewModelTest {
 
         assertThat(viewModel.uiState.value.progress).isWithin(0.001f).of(0.25f)
     }
+
+    @Test
+    fun `undo restores order and checkmarks after a reorder`() = runTest(scheduler) {
+        val id = seedDocument("first\nsecond\nthird")
+        val viewModel = EditorViewModel(repository, id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+        viewModel.onSnippetCopied(viewModel.uiState.value.snippets[2])
+
+        viewModel.onReorder(fromIndex = 2, toIndex = 0)
+        assertThat(viewModel.uiState.value.rawText).isEqualTo("third\nfirst\nsecond")
+        assertThat(viewModel.uiState.value.canUndoReorder).isTrue()
+
+        viewModel.onUndoReorder()
+
+        val state = viewModel.uiState.value
+        assertThat(state.rawText).isEqualTo("first\nsecond\nthird")
+        assertThat(state.snippets.map { it.text })
+            .containsExactly("first", "second", "third").inOrder()
+        assertThat(state.snippets.map { it.isCopied })
+            .containsExactly(false, false, true).inOrder()
+        assertThat(state.canUndoReorder).isFalse()
+    }
+
+    @Test
+    fun `undo walks back multiple reorders`() = runTest(scheduler) {
+        val id = seedDocument("a\nb\nc")
+        val viewModel = EditorViewModel(repository, id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+
+        viewModel.onReorder(fromIndex = 2, toIndex = 0) // c, a, b
+        viewModel.onReorder(fromIndex = 2, toIndex = 1) // c, b, a
+        assertThat(viewModel.uiState.value.rawText).isEqualTo("c\nb\na")
+
+        viewModel.onUndoReorder()
+        assertThat(viewModel.uiState.value.rawText).isEqualTo("c\na\nb")
+        assertThat(viewModel.uiState.value.canUndoReorder).isTrue()
+
+        viewModel.onUndoReorder()
+        assertThat(viewModel.uiState.value.rawText).isEqualTo("a\nb\nc")
+        assertThat(viewModel.uiState.value.canUndoReorder).isFalse()
+    }
+
+    @Test
+    fun `undo with an empty stack is a no-op`() = runTest(scheduler) {
+        val id = seedDocument("a\nb")
+        val viewModel = EditorViewModel(repository, id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+
+        viewModel.onUndoReorder()
+
+        assertThat(viewModel.uiState.value.snippets.map { it.text })
+            .containsExactly("a", "b").inOrder()
+        assertThat(viewModel.uiState.value.canUndoReorder).isFalse()
+    }
+
+    @Test
+    fun `reordering a row onto itself does not enable undo`() = runTest(scheduler) {
+        val id = seedDocument("a\nb")
+        val viewModel = EditorViewModel(repository, id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+
+        viewModel.onReorder(fromIndex = 1, toIndex = 1)
+
+        assertThat(viewModel.uiState.value.canUndoReorder).isFalse()
+        assertThat(viewModel.uiState.value.snippets.map { it.text })
+            .containsExactly("a", "b").inOrder()
+    }
+
+    @Test
+    fun `editing the body after a reorder clears undo`() = runTest(scheduler) {
+        val id = seedDocument("a\nb\nc")
+        val viewModel = EditorViewModel(repository, id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+        viewModel.onReorder(fromIndex = 2, toIndex = 0)
+        assertThat(viewModel.uiState.value.canUndoReorder).isTrue()
+
+        viewModel.onToggleMode()
+        viewModel.onTextChanged("a\nb\nc\nextra")
+
+        assertThat(viewModel.uiState.value.canUndoReorder).isFalse()
+        viewModel.onUndoReorder()
+        assertThat(viewModel.uiState.value.rawText).isEqualTo("a\nb\nc\nextra")
+    }
 }

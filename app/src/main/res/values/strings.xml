@@ -39,6 +39,7 @@
     <string name="editor_switch_to_copy">Switch to copy mode</string>
     <string name="editor_switch_to_edit">Switch to edit mode</string>
     <string name="editor_reset_checks">Reset all checkmarks</string>
+    <string name="editor_undo_reorder">Undo reorder</string>
     <string name="editor_progress">%1$d of %2$d copied</string>
     <string name="editor_all_copied">All items copied</string>
     <string name="editor_checks_reset">Checkmarks reset</string>

@@ -152,6 +152,7 @@ fun HomeScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -275,12 +276,18 @@ fun HomeScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background,
                 ),
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.onCreateDocument(onDocumentClick) }) {
+            FloatingActionButton(
+                onClick = { viewModel.onCreateDocument(onDocumentClick) },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = CircleShape,
+            ) {
                 Icon(
                     Icons.Default.Add,
                     contentDescription = stringResource(R.string.home_create_document),
@@ -369,7 +376,7 @@ private fun EmptyState(
         Icon(
             imageVector = if (isSearching) Icons.Default.Search else Icons.Outlined.Description,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
             modifier = Modifier.size(64.dp),
         )
         Text(

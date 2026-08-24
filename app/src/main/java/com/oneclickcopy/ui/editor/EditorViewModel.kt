@@ -29,6 +29,7 @@ data class EditorUiState(
     val rawText: String = "",
     val isCopyMode: Boolean = false,
     val snippets: List<Snippet> = emptyList(),
+    val canUndoReorder: Boolean = false,
 ) {
     val copiedCount: Int get() = snippets.count { it.isCopied }
     val totalCount: Int get() = snippets.size
@@ -59,6 +60,12 @@ class EditorViewModel(
     private var copiedKeys: Set<SnippetKey> = emptySet()
     private var autoSaveJob: Job? = null
     private var loaded = false
+
+    /**
+     * Previous copy-mode lists, newest last. Popped by [onUndoReorder] so an
+     * accidental drag can be reversed without leaving Copy mode.
+     */
+    private val reorderUndoStack = ArrayDeque<ReorderSnapshot>()
 
     init {
         load()
@@ -91,6 +98,11 @@ class EditorViewModel(
     }
 
     fun onTextChanged(rawText: String) {
+        if (rawText != _uiState.value.rawText) {
+            // Typing rewrites the body, so reorder snapshots would restore stale
+            // lines. Clear rather than try to reconcile.
+            clearReorderUndo()
+        }
         _uiState.update { state ->
             state.copy(
                 rawText = rawText,
@@ -101,6 +113,7 @@ class EditorViewModel(
                 } else {
                     state.snippets
                 },
+                canUndoReorder = reorderUndoStack.isNotEmpty(),
             )
         }
         scheduleSave()
@@ -147,24 +160,58 @@ class EditorViewModel(
     }
 
     fun onReorder(fromIndex: Int, toIndex: Int) {
-        _uiState.update { state ->
-            val snippets = state.snippets
-            if (fromIndex !in snippets.indices || toIndex !in snippets.indices) {
-                return@update state
-            }
-            val reordered = snippets.toMutableList().apply {
-                add(toIndex, removeAt(fromIndex))
-            }
-            val reindexed = SnippetParser.reindex(reordered)
-            // Reordering rewrites the document, so copied keys must be remapped to
-            // the new occurrence indices or checkmarks would jump between rows.
-            copiedKeys = reindexed.filter { it.isCopied }.map { it.key }.toSet()
-            state.copy(
+        val state = _uiState.value
+        val snippets = state.snippets
+        if (fromIndex !in snippets.indices || toIndex !in snippets.indices) return
+        if (fromIndex == toIndex) return
+
+        pushReorderUndo(state)
+        val reordered = snippets.toMutableList().apply {
+            add(toIndex, removeAt(fromIndex))
+        }
+        val reindexed = SnippetParser.reindex(reordered)
+        // Reordering rewrites the document, so copied keys must be remapped to
+        // the new occurrence indices or checkmarks would jump between rows.
+        copiedKeys = reindexed.filter { it.isCopied }.map { it.key }.toSet()
+        _uiState.update {
+            it.copy(
                 snippets = reindexed,
                 rawText = SnippetParser.render(reindexed),
+                canUndoReorder = true,
             )
         }
         scheduleSave()
+    }
+
+    /** Restores the list as it was before the most recent drag. */
+    fun onUndoReorder() {
+        val snapshot = reorderUndoStack.removeLastOrNull() ?: return
+        copiedKeys = snapshot.copiedKeys
+        _uiState.update {
+            it.copy(
+                snippets = snapshot.snippets,
+                rawText = snapshot.rawText,
+                canUndoReorder = reorderUndoStack.isNotEmpty(),
+            )
+        }
+        scheduleSave()
+    }
+
+    private fun pushReorderUndo(state: EditorUiState) {
+        reorderUndoStack.addLast(
+            ReorderSnapshot(
+                snippets = state.snippets,
+                rawText = state.rawText,
+                copiedKeys = copiedKeys,
+            )
+        )
+        while (reorderUndoStack.size > MAX_REORDER_UNDO) {
+            reorderUndoStack.removeFirst()
+        }
+    }
+
+    private fun clearReorderUndo() {
+        reorderUndoStack.clear()
     }
 
     fun onResetChecks() {
@@ -217,6 +264,7 @@ class EditorViewModel(
 
     companion object {
         private const val AUTO_SAVE_DEBOUNCE_MS = 400L
+        private const val MAX_REORDER_UNDO = 20
 
         fun factory(repository: DocumentRepository, documentId: Long): ViewModelProvider.Factory =
             viewModelFactory {
@@ -224,3 +272,9 @@ class EditorViewModel(
             }
     }
 }
+
+private data class ReorderSnapshot(
+    val snippets: List<Snippet>,
+    val rawText: String,
+    val copiedKeys: Set<SnippetKey>,
+)

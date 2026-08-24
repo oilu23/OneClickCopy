@@ -25,6 +25,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.TouchApp
@@ -132,6 +133,7 @@ fun EditorScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -173,6 +175,23 @@ fun EditorScreen(
                         IconButton(
                             onClick = {
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.onUndoReorder()
+                            },
+                            enabled = uiState.canUndoReorder,
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Undo,
+                                contentDescription = stringResource(R.string.editor_undo_reorder),
+                                tint = if (uiState.canUndoReorder) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                },
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 viewModel.onResetChecks()
                             },
                             enabled = uiState.copiedCount > 0,
@@ -198,7 +217,8 @@ fun EditorScreen(
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background,
                 ),
             )
         },
@@ -268,7 +288,7 @@ private fun CopyModeList(
             Icon(
                 Icons.Default.TouchApp,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
                 modifier = Modifier.size(56.dp),
             )
             Text(
@@ -371,6 +391,10 @@ private fun ModeToggle(
         targetValue = if (isCopyMode) modeColors.copyMode else modeColors.editMode,
         label = "modeToggle",
     )
+    val contentColor by animateColorAsState(
+        targetValue = if (isCopyMode) modeColors.onCopyMode else modeColors.onEditMode,
+        label = "modeToggleContent",
+    )
 
     Surface(
         color = containerColor,
@@ -393,7 +417,7 @@ private fun ModeToggle(
             Icon(
                 imageVector = if (isCopyMode) Icons.Default.TouchApp else Icons.Default.EditNote,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimary,
+                tint = contentColor,
                 modifier = Modifier.size(18.dp),
             )
             Spacer(Modifier.width(6.dp))
@@ -403,7 +427,7 @@ private fun ModeToggle(
                 ),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = contentColor,
             )
         }
     }

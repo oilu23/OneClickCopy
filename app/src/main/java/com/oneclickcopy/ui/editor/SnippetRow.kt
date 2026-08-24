@@ -54,8 +54,8 @@ fun SnippetRow(
     val containerColor by animateColorAsState(
         targetValue = when {
             isDragging -> MaterialTheme.colorScheme.surfaceContainerHighest
-            snippet.isCopied -> MaterialTheme.colorScheme.surfaceContainer
-            else -> MaterialTheme.colorScheme.surface
+            snippet.isCopied -> MaterialTheme.colorScheme.surfaceContainerLow
+            else -> MaterialTheme.colorScheme.surfaceContainer
         },
         label = "snippetContainer",
     )
