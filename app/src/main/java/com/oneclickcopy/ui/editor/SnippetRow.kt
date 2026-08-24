@@ -129,7 +129,7 @@ fun SnippetDragHandle(modifier: Modifier = Modifier) {
 @Preview
 @Composable
 private fun SnippetRowPreview() {
-    OneClickCopyTheme(darkTheme = true, dynamicColor = false) {
+    OneClickCopyTheme {
         SnippetRow(
             snippet = Snippet("Thanks for reaching out!", 0, 0, isCopied = true),
             isDragging = false,

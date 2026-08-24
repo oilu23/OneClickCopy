@@ -30,7 +30,6 @@ data class HomeUiState(
     val syncState: SyncState = SyncState.SignedOut,
     val accountEmail: String? = null,
 ) {
-    val isEmpty: Boolean get() = !isLoading && documents.isEmpty()
     val isSearching: Boolean get() = searchQuery.isNotBlank()
     val isSignedIn: Boolean get() = syncState !is SyncState.SignedOut
 }
@@ -161,10 +160,6 @@ class HomeViewModel(
                     _events.value = HomeEvent.Error(UiText.res(R.string.error_restore_document))
                 }
         }
-    }
-
-    fun discardIfEmpty(documentId: Long) {
-        viewModelScope.launch { runCatching { repository.discardIfEmpty(documentId) } }
     }
 
     fun onExportTo(uri: Uri) {

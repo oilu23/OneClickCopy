@@ -122,7 +122,7 @@ fun DocumentRow(
 @Preview
 @Composable
 private fun DocumentRowPreview() {
-    OneClickCopyTheme(darkTheme = true, dynamicColor = false) {
+    OneClickCopyTheme {
         DocumentRow(
             document = DocumentEntity(
                 id = 1,

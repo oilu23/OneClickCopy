@@ -66,7 +66,7 @@ fun DeleteDocumentDialog(
 @Preview
 @Composable
 private fun DeleteDocumentDialogPreview() {
-    OneClickCopyTheme(darkTheme = true, dynamicColor = false) {
+    OneClickCopyTheme {
         DeleteDocumentDialog(
             document = DocumentEntity(
                 id = 1,

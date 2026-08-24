@@ -1,17 +1,13 @@
 package com.oneclickcopy.ui.theme
 
-import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
@@ -52,26 +48,6 @@ private val DarkColors = darkColorScheme(
     surfaceTint = Grey60,
 )
 
-private val LightColors = lightColorScheme(
-    primary = Teal40,
-    onPrimary = Color.White,
-    primaryContainer = TealContainerLight,
-    onPrimaryContainer = Color(0xFF002020),
-    secondary = Teal40,
-    onSecondary = Color.White,
-    background = Neutral99,
-    onBackground = Neutral10,
-    surface = Neutral99,
-    onSurface = Neutral10,
-    surfaceVariant = Neutral95,
-    onSurfaceVariant = Grey30,
-    outline = Grey60,
-    error = ErrorLight,
-    onError = Color.White,
-    errorContainer = ErrorContainerLight,
-    onErrorContainer = Color(0xFF410002),
-)
-
 /** Semantic colors that Material's scheme does not model. */
 data class ModeColors(
     val copyMode: Color,
@@ -80,67 +56,36 @@ data class ModeColors(
     val onEditMode: Color,
 )
 
-val LocalModeColors = staticCompositionLocalOf {
-    ModeColors(
-        copyMode = CopyModeGreen,
-        editMode = EditModeAmber,
-        onCopyMode = Color.White,
-        onEditMode = Color.White,
-    )
-}
+private val DarkModeColors = ModeColors(
+    copyMode = CopyModeGreenContainer,
+    editMode = EditModeAmberContainer,
+    onCopyMode = OnCopyModeGreenContainer,
+    onEditMode = OnEditModeAmberContainer,
+)
+
+val LocalModeColors = staticCompositionLocalOf { DarkModeColors }
 
 /**
  * App theme.
  *
- * Dark is the product look. Defaults do not follow the system light setting and
- * do not pull Material You wallpaper colors, so the OLED gray palette stays
- * consistent on every device. Previews and tests can still pass [darkTheme]
- * or [dynamicColor] explicitly.
+ * Dark is the product look. The palette does not follow the system light
+ * setting and does not pull Material You wallpaper colors.
  */
 @Composable
-fun OneClickCopyTheme(
-    darkTheme: Boolean = true,
-    dynamicColor: Boolean = false,
-    content: @Composable () -> Unit,
-) {
-    val context = LocalContext.current
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColors
-        else -> LightColors
-    }
-
-    val modeColors = if (darkTheme) {
-        ModeColors(
-            copyMode = CopyModeGreenContainer,
-            editMode = EditModeAmberContainer,
-            onCopyMode = OnCopyModeGreenContainer,
-            onEditMode = OnEditModeAmberContainer,
-        )
-    } else {
-        ModeColors(
-            copyMode = CopyModeGreen,
-            editMode = EditModeAmber,
-            onCopyMode = Color.White,
-            onEditMode = Color.White,
-        )
-    }
-
+fun OneClickCopyTheme(content: @Composable () -> Unit) {
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val activity = view.context as? ComponentActivity ?: return@SideEffect
             val controller = WindowCompat.getInsetsController(activity.window, view)
-            controller.isAppearanceLightStatusBars = !darkTheme
-            controller.isAppearanceLightNavigationBars = !darkTheme
+            controller.isAppearanceLightStatusBars = false
+            controller.isAppearanceLightNavigationBars = false
         }
     }
 
-    androidx.compose.runtime.CompositionLocalProvider(LocalModeColors provides modeColors) {
+    CompositionLocalProvider(LocalModeColors provides DarkModeColors) {
         MaterialTheme(
-            colorScheme = colorScheme,
+            colorScheme = DarkColors,
             typography = Typography,
             content = content,
         )

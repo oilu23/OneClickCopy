@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
         val container = (application as OneClickCopyApplication).container
 
         setContent {
-            OneClickCopyTheme(darkTheme = true, dynamicColor = false) {
+            OneClickCopyTheme {
                 Surface(
                     color = MaterialTheme.colorScheme.background,
                     modifier = Modifier.fillMaxSize(),

@@ -36,7 +36,7 @@ class DeleteDocumentDialogTest {
     @Test
     fun `dialog shows the document title and item count`() {
         composeRule.setContent {
-            OneClickCopyTheme(darkTheme = true, dynamicColor = false) {
+            OneClickCopyTheme {
                 DeleteDocumentDialog(document = document, onConfirm = {}, onDismiss = {})
             }
         }
@@ -51,7 +51,7 @@ class DeleteDocumentDialogTest {
     fun `confirming reports the deletion exactly once`() {
         var confirmed = 0
         composeRule.setContent {
-            OneClickCopyTheme(darkTheme = true, dynamicColor = false) {
+            OneClickCopyTheme {
                 DeleteDocumentDialog(
                     document = document,
                     onConfirm = { confirmed++ },
@@ -70,7 +70,7 @@ class DeleteDocumentDialogTest {
         var confirmed = 0
         var dismissed = 0
         composeRule.setContent {
-            OneClickCopyTheme(darkTheme = true, dynamicColor = false) {
+            OneClickCopyTheme {
                 DeleteDocumentDialog(
                     document = document,
                     onConfirm = { confirmed++ },
@@ -88,7 +88,7 @@ class DeleteDocumentDialogTest {
     @Test
     fun `an untitled document is described without an empty name`() {
         composeRule.setContent {
-            OneClickCopyTheme(darkTheme = true, dynamicColor = false) {
+            OneClickCopyTheme {
                 DeleteDocumentDialog(
                     document = DocumentEntity(id = 2, title = "", content = "one"),
                     onConfirm = {},
@@ -104,7 +104,7 @@ class DeleteDocumentDialogTest {
     @Test
     fun `an empty document omits the item count`() {
         composeRule.setContent {
-            OneClickCopyTheme(darkTheme = true, dynamicColor = false) {
+            OneClickCopyTheme {
                 DeleteDocumentDialog(
                     document = DocumentEntity(id = 3, title = "Empty", content = ""),
                     onConfirm = {},

@@ -20,7 +20,6 @@ googleApiDrive = "v3-rev20240509-2.0.0"
 googleHttpGson = "1.44.2"
 junit = "4.13.2"
 androidxTestExt = "1.2.1"
-espresso = "3.6.1"
 robolectric = "4.12.2"
 truth = "1.4.2"
 turbine = "1.1.0"
@@ -70,7 +69,6 @@ truth = { module = "com.google.truth:truth", version.ref = "truth" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExt" }
-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
