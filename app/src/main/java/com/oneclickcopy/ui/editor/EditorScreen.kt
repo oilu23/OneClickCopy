@@ -285,7 +285,7 @@ private fun CopyModeList(
             Icon(
                 Icons.Default.TouchApp,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
                 modifier = Modifier.size(56.dp),
             )
             Text(

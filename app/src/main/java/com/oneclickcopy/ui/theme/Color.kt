@@ -2,21 +2,14 @@ package com.oneclickcopy.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Brand teal — used as the forced-dark accent.
-val Teal80 = Color(0xFF4FD8D8)
+// Light-theme teal. Dark chrome is gray; these stay for the unused light scheme.
 val Teal40 = Color(0xFF00696B)
-val TealContainerDark = Color(0xFF004F50)
 val TealContainerLight = Color(0xFF9CF1F1)
 
-// Ink surfaces: slightly teal-shifted so the dark theme is not generic grey.
-val Ink00 = Color(0xFF070A0B)
-val Ink10 = Color(0xFF0E1416)
-val Ink15 = Color(0xFF152022)
-val Ink20 = Color(0xFF1C2A2C)
-val Ink25 = Color(0xFF273638)
-val Mist90 = Color(0xFFDCE8E9)
-val Mist70 = Color(0xFF9BB3B5)
-
+// OLED gray surfaces. Neutral05 is the document/snippet card fill.
+val Neutral00 = Color(0xFF000000)
+val Neutral05 = Color(0xFF0C0C0C)
+val Neutral08 = Color(0xFF080808)
 val Neutral10 = Color(0xFF121212)
 val Neutral15 = Color(0xFF1B1B1B)
 val Neutral20 = Color(0xFF242424)
@@ -35,8 +28,10 @@ val ErrorContainerLight = Color(0xFFFFDAD6)
 
 /** Semantic accents for the edit/copy mode toggle. */
 val CopyModeGreen = Color(0xFF2E7D32)
-val CopyModeGreenLight = Color(0xFF66BB6A)
 val EditModeAmber = Color(0xFF9A6700)
-val EditModeAmberLight = Color(0xFFFFB74D)
-val OnCopyModeDark = Color(0xFF00320A)
-val OnEditModeDark = Color(0xFF3A2400)
+
+/** Dark-theme mode chips: dim containers with light labels so they recede. */
+val CopyModeGreenContainer = Color(0xFF0D2411)
+val OnCopyModeGreenContainer = Color(0xFF8FD992)
+val EditModeAmberContainer = Color(0xFF271800)
+val OnEditModeAmberContainer = Color(0xFFFFC56D)

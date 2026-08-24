@@ -64,6 +64,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.oneclickcopy.R
 import com.oneclickcopy.data.DocumentEntity
+import com.oneclickcopy.ui.theme.Grey30
+import com.oneclickcopy.ui.theme.Neutral90
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -277,8 +279,8 @@ fun HomeScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.onCreateDocument(onDocumentClick) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                containerColor = Grey30,
+                contentColor = Neutral90,
                 shape = CircleShape,
             ) {
                 Icon(
@@ -369,7 +371,7 @@ private fun EmptyState(
         Icon(
             imageVector = if (isSearching) Icons.Default.Search else Icons.Outlined.Description,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
             modifier = Modifier.size(64.dp),
         )
         Text(

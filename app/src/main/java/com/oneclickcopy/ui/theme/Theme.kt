@@ -16,40 +16,40 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColors = darkColorScheme(
-    primary = Teal80,
-    onPrimary = Color(0xFF003737),
-    primaryContainer = TealContainerDark,
-    onPrimaryContainer = TealContainerLight,
-    secondary = Teal80,
-    onSecondary = Color(0xFF003737),
-    secondaryContainer = Ink20,
-    onSecondaryContainer = Mist90,
-    tertiary = Teal80,
-    onTertiary = Color(0xFF003737),
-    background = Ink00,
-    onBackground = Mist90,
-    surface = Ink00,
-    onSurface = Mist90,
-    surfaceVariant = Ink20,
-    onSurfaceVariant = Mist70,
-    surfaceDim = Ink00,
-    surfaceBright = Ink20,
-    surfaceContainerLowest = Ink00,
-    surfaceContainerLow = Ink10,
-    surfaceContainer = Ink15,
-    surfaceContainerHigh = Ink20,
-    surfaceContainerHighest = Ink25,
-    outline = Color(0xFF3E5557),
-    outlineVariant = Ink25,
-    inverseSurface = Mist90,
-    inverseOnSurface = Ink10,
-    inversePrimary = Teal40,
+    primary = Grey60,
+    onPrimary = Neutral99,
+    primaryContainer = Neutral25,
+    onPrimaryContainer = Neutral90,
+    secondary = Grey60,
+    onSecondary = Neutral99,
+    secondaryContainer = Neutral20,
+    onSecondaryContainer = Neutral90,
+    tertiary = Grey60,
+    onTertiary = Neutral99,
+    background = Neutral00,
+    onBackground = Neutral90,
+    surface = Neutral00,
+    onSurface = Neutral90,
+    surfaceVariant = Neutral15,
+    onSurfaceVariant = Grey60,
+    surfaceDim = Neutral00,
+    surfaceBright = Neutral20,
+    surfaceContainerLowest = Neutral00,
+    surfaceContainerLow = Neutral08,
+    surfaceContainer = Neutral05,
+    surfaceContainerHigh = Neutral15,
+    surfaceContainerHighest = Neutral20,
+    outline = Grey30,
+    outlineVariant = Neutral25,
+    inverseSurface = Neutral90,
+    inverseOnSurface = Neutral10,
+    inversePrimary = Grey30,
     error = ErrorDark,
     onError = Color(0xFF690005),
     errorContainer = ErrorContainerDark,
     onErrorContainer = ErrorContainerLight,
     scrim = Color(0xFF000000),
-    surfaceTint = Teal80,
+    surfaceTint = Grey60,
 )
 
 private val LightColors = lightColorScheme(
@@ -93,7 +93,7 @@ val LocalModeColors = staticCompositionLocalOf {
  * App theme.
  *
  * Dark is the product look. Defaults do not follow the system light setting and
- * do not pull Material You wallpaper colors, so the ink/teal palette stays
+ * do not pull Material You wallpaper colors, so the OLED gray palette stays
  * consistent on every device. Previews and tests can still pass [darkTheme]
  * or [dynamicColor] explicitly.
  */
@@ -114,10 +114,10 @@ fun OneClickCopyTheme(
 
     val modeColors = if (darkTheme) {
         ModeColors(
-            copyMode = CopyModeGreenLight,
-            editMode = EditModeAmberLight,
-            onCopyMode = OnCopyModeDark,
-            onEditMode = OnEditModeDark,
+            copyMode = CopyModeGreenContainer,
+            editMode = EditModeAmberContainer,
+            onCopyMode = OnCopyModeGreenContainer,
+            onEditMode = OnEditModeAmberContainer,
         )
     } else {
         ModeColors(

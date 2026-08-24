@@ -16,7 +16,7 @@ off so you always know what you've already used.
 - **Autosave** — edits persist automatically, and flush immediately on exit
 - **Undo delete** — deleting a document offers an undo action
 - **Google Drive backup** — optional cloud sync stored in Drive's private app folder
-- **Material 3** — ink/teal dark theme; copy-mode reorder with undo
+- **Material 3** — OLED dark gray theme; copy-mode reorder with undo
 
 ## Architecture
 
