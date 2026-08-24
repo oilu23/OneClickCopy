@@ -1,21 +1,20 @@
 package com.oneclickcopy.ui.home
 
 import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.oneclickcopy.R
 import com.oneclickcopy.backup.DriveBackupManager
 import com.oneclickcopy.data.DocumentEntity
 import com.oneclickcopy.data.DocumentRepository
 import com.oneclickcopy.data.DocumentTransfer
-import android.net.Uri
 import com.oneclickcopy.sync.SyncManager
-import com.oneclickcopy.ui.common.UiText
-import com.oneclickcopy.R
 import com.oneclickcopy.sync.SyncState
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.oneclickcopy.ui.common.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -42,7 +41,6 @@ sealed interface HomeEvent {
     data class Error(val message: UiText) : HomeEvent
 }
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     private val repository: DocumentRepository,
     private val syncManager: SyncManager,

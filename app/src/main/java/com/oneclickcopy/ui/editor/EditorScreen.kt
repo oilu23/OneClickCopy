@@ -1,14 +1,13 @@
 package com.oneclickcopy.ui.editor
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -56,16 +56,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.oneclickcopy.R
 import com.oneclickcopy.ui.BackNavigationGate
 import com.oneclickcopy.ui.common.resolve
 import com.oneclickcopy.ui.theme.LocalModeColors
-import com.oneclickcopy.ui.theme.OneClickCopyTheme
 import com.oneclickcopy.ui.util.ClipboardHelper
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -96,7 +93,7 @@ fun EditorScreen(
     }
 
     LaunchedEffect(event) {
-        when (val current = event) {
+        when (event) {
             is EditorEvent.Copied -> {
                 if (ClipboardHelper.copiedFeedbackNeeded) {
                     snackbarHostState.showSnackbar(copiedMessage)
@@ -310,11 +307,11 @@ private fun CopyModeList(
         onReorder(from.index, to.index)
     }
 
-    androidx.compose.foundation.lazy.LazyColumn(
+    LazyColumn(
         state = listState,
         // Extra bottom padding so the final row can always be scrolled clear of
         // the system navigation bar / gesture area.
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+        contentPadding = PaddingValues(
             start = 8.dp,
             end = 8.dp,
             top = 8.dp,

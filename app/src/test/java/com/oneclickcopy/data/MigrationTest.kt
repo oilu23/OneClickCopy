@@ -75,7 +75,11 @@ class MigrationTest {
                 db.execSQL(createSql)
             }
 
-            override fun onUpgrade(db: SupportSQLiteDatabase, old: Int, new: Int) = Unit
+            override fun onUpgrade(
+                db: SupportSQLiteDatabase,
+                oldVersion: Int,
+                newVersion: Int,
+            ) = Unit
         }
         val configuration = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(DB_NAME)
