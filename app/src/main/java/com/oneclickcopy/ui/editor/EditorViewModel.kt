@@ -29,6 +29,13 @@ data class EditorUiState(
     val isCopyMode: Boolean = false,
     val snippets: List<Snippet> = emptyList(),
     val canUndoReorder: Boolean = false,
+    // Whether a "Paste" action is available in the long-press menu, i.e. some
+    // item has been copied to the paste buffer this session.
+    val canPaste: Boolean = false,
+    // Non-null when a long-press on a copy-field row should drop the user into
+    // edit mode with the cursor at the end of that row's text. Consumed by the
+    // edit field once applied.
+    val editRequestedOffset: Int? = null,
 ) {
     val copiedCount: Int get() = snippets.count { it.isCopied }
     val totalCount: Int get() = snippets.size
@@ -47,6 +54,7 @@ sealed interface EditorEvent {
 class EditorViewModel(
     private val repository: DocumentRepository,
     private val documentId: Long,
+    private val isNewDocument: Boolean = false,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditorUiState())
@@ -57,6 +65,8 @@ class EditorViewModel(
 
     /** Copied-state keys, held separately so they survive mode switches. */
     private var copiedKeys: Set<SnippetKey> = emptySet()
+    /** Text of the last item copied to the paste buffer, or null if none yet. */
+    private var lastCopiedText: String? = null
     private var autoSaveJob: Job? = null
     private var loaded = false
 
@@ -84,6 +94,7 @@ class EditorViewModel(
                     documentExists = true,
                     title = document.title,
                     rawText = document.content,
+                    isCopyMode = !isNewDocument,
                     snippets = SnippetParser.parse(document.content, copiedKeys),
                 )
             }
@@ -132,13 +143,134 @@ class EditorViewModel(
         }
     }
 
+    /**
+     * A long-press on a copy-mode row drops the user back into edit mode with the
+     * text cursor placed at the end of that row, ready to add or change text.
+     */
+    fun onSnippetLongPress(snippet: Snippet) {
+        val state = _uiState.value
+        val editOffset = lineEndOffset(state.rawText, snippet.sourceLineIndex)
+        _uiState.update {
+            it.copy(
+                isCopyMode = false,
+                editRequestedOffset = editOffset ?: state.rawText.length,
+            )
+        }
+    }
+
+    /** Consumes a requested edit offset after the field has applied it. */
+    fun consumeEditRequest() {
+        _uiState.update { it.copy(editRequestedOffset = null) }
+    }
+
+    /**
+     * Deletes the line for [snippet] from the document. Removes it from the
+     * copied-state keys as well. The prior state is pushed onto the undo stack
+     * so the deleted item can be restored with Undo.
+     */
+    fun onSnippetDelete(snippet: Snippet) {
+        val state = _uiState.value
+        val newText = removeLine(state.rawText, snippet.sourceLineIndex) ?: return
+        pushReorderUndo(state)
+        copiedKeys = copiedKeys - snippet.key
+        rewriteDocument(newText)
+    }
+
+    /**
+     * Pastes the last-copied item's text as a new line immediately below
+     * [snippet]. A no-op if nothing has been copied yet.
+     */
+    fun onSnippetPasteAfter(snippet: Snippet) {
+        val text = lastCopiedText ?: return
+        val state = _uiState.value
+        val newText = insertLineAfter(state.rawText, snippet.sourceLineIndex, text) ?: return
+        // Paste rewrites the body, so reorder snapshots would restore stale lines.
+        clearReorderUndo()
+        rewriteDocument(newText)
+    }
+
+    /** Re-parses [rawText] into snippets and persists it. */
+    private fun rewriteDocument(rawText: String) {
+        _uiState.update {
+            it.copy(
+                rawText = rawText,
+                snippets = SnippetParser.parse(rawText, copiedKeys),
+                canUndoReorder = reorderUndoStack.isNotEmpty(),
+            )
+        }
+        scheduleSave()
+    }
+
+    /**
+     * Returns the [start, endExclusive) character range of the [lineIndex]-th
+     * line (0-based) in [rawText], or null if that line does not exist.
+     * [endExclusive] sits just past the line's content — at its trailing newline
+     * when it has one, or at the end of the string for the final line.
+     */
+    private fun lineSpan(rawText: String, lineIndex: Int): IntRange? {
+        if (lineIndex < 0) return null
+        var currentLine = 0
+        var offset = 0
+        while (offset <= rawText.length) {
+            val nl = rawText.indexOf('\n', offset)
+            val endExclusive = if (nl == -1) rawText.length else nl
+            if (currentLine == lineIndex) return offset..endExclusive
+            currentLine++
+            if (nl == -1) return null
+            offset = nl + 1
+        }
+        return null
+    }
+
+    /**
+     * Character offset just past the end of a line — where a cursor sits to edit
+     * it — or null if the line does not exist.
+     */
+    private fun lineEndOffset(rawText: String, lineIndex: Int): Int? =
+        lineSpan(rawText, lineIndex)?.last
+
+    /**
+     * Removes the [lineIndex]-th line (including its trailing newline) from
+     * [rawText], returning the new text, or null if the line does not exist.
+     */
+    private fun removeLine(rawText: String, lineIndex: Int): String? {
+        val span = lineSpan(rawText, lineIndex) ?: return null
+        return if (span.last >= rawText.length) {
+            // Final line: also consume the preceding newline so we do not leave
+            // a dangling trailing newline behind.
+            val preceding =
+                if (span.first > 0 && rawText[span.first - 1] == '\n') span.first - 1 else span.first
+            rawText.removeRange(preceding, rawText.length)
+        } else {
+            rawText.removeRange(span.first, span.last + 1)
+        }
+    }
+
+    /**
+     * Inserts [text] as a new line immediately after the [lineIndex]-th line in
+     * [rawText], returning the new text, or null if the line does not exist.
+     */
+    private fun insertLineAfter(rawText: String, lineIndex: Int, text: String): String? {
+        val endExclusive = lineSpan(rawText, lineIndex)?.last ?: return null
+        return if (endExclusive < rawText.length) {
+            // There is a newline after this line; insert text plus a newline
+            // right after it so the following line keeps its own row.
+            rawText.substring(0, endExclusive + 1) + text + "\n" + rawText.substring(endExclusive + 1)
+        } else {
+            // Last line, no trailing newline; append on its own line.
+            rawText + "\n" + text
+        }
+    }
+
     fun onSnippetCopied(snippet: Snippet) {
         copiedKeys = copiedKeys + snippet.key
+        lastCopiedText = snippet.text
         _uiState.update { state ->
             state.copy(
                 snippets = state.snippets.map {
                     if (it.key == snippet.key) it.copy(isCopied = true) else it
                 },
+                canPaste = true,
             )
         }
         _events.value = EditorEvent.Copied(snippet.text)
@@ -265,9 +397,13 @@ class EditorViewModel(
         private const val AUTO_SAVE_DEBOUNCE_MS = 400L
         private const val MAX_REORDER_UNDO = 20
 
-        fun factory(repository: DocumentRepository, documentId: Long): ViewModelProvider.Factory =
+        fun factory(
+            repository: DocumentRepository,
+            documentId: Long,
+            isNewDocument: Boolean = false,
+        ): ViewModelProvider.Factory =
             viewModelFactory {
-                initializer { EditorViewModel(repository, documentId) }
+                initializer { EditorViewModel(repository, documentId, isNewDocument) }
             }
     }
 }

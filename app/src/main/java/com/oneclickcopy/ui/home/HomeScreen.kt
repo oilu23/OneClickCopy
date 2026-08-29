@@ -74,6 +74,7 @@ import com.oneclickcopy.ui.theme.Neutral90
 fun HomeScreen(
     viewModel: HomeViewModel,
     onDocumentClick: (Long) -> Unit,
+    onCreateDocument: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -280,7 +281,7 @@ fun HomeScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.onCreateDocument(onDocumentClick) },
+                onClick = { viewModel.onCreateDocument(onCreateDocument) },
                 containerColor = Grey30,
                 contentColor = Neutral90,
                 shape = CircleShape,

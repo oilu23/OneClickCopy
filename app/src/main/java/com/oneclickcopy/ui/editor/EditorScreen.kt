@@ -30,6 +30,8 @@ import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,17 +48,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.oneclickcopy.R
@@ -254,12 +262,18 @@ fun EditorScreen(
                             }
                         },
                         onReorder = viewModel::onReorder,
+                        onEdit = viewModel::onSnippetLongPress,
+                        onPaste = viewModel::onSnippetPasteAfter,
+                        onDelete = viewModel::onSnippetDelete,
+                        canPaste = uiState.canPaste,
                     )
                 }
                 else -> {
                     EditModeField(
                         rawText = uiState.rawText,
+                        editRequestedOffset = uiState.editRequestedOffset,
                         onTextChanged = viewModel::onTextChanged,
+                        onEditRequestApplied = viewModel::consumeEditRequest,
                     )
                 }
             }
@@ -273,6 +287,10 @@ private fun CopyModeList(
     onCopy: (com.oneclickcopy.domain.Snippet) -> Unit,
     onToggleChecked: (com.oneclickcopy.domain.Snippet) -> Unit,
     onReorder: (Int, Int) -> Unit,
+    onEdit: (com.oneclickcopy.domain.Snippet) -> Unit,
+    onPaste: (com.oneclickcopy.domain.Snippet) -> Unit,
+    onDelete: (com.oneclickcopy.domain.Snippet) -> Unit,
+    canPaste: Boolean,
 ) {
     if (uiState.snippets.isEmpty()) {
         Column(
@@ -325,29 +343,107 @@ private fun CopyModeList(
             key = { index -> uiState.snippets[index].key.encode() },
         ) { index ->
             val snippet = uiState.snippets[index]
-            ReorderableItem(reorderState, key = snippet.key.encode()) { isDragging ->
-                SnippetRow(
-                    snippet = snippet,
-                    isDragging = isDragging,
-                    onCopy = { onCopy(snippet) },
-                    onToggleChecked = { onToggleChecked(snippet) },
-                    dragHandle = {
-                        SnippetDragHandle(
-                            modifier = Modifier.draggableHandle(),
-                        )
-                    },
-                )
+            val menuKey = snippet.key.encode()
+            var menuOpen by remember { mutableStateOf(false) }
+            ReorderableItem(reorderState, key = menuKey) { isDragging ->
+                Box {
+                    SnippetRow(
+                        snippet = snippet,
+                        isDragging = isDragging,
+                        onCopy = { onCopy(snippet) },
+                        onToggleChecked = { onToggleChecked(snippet) },
+                        onLongPress = { menuOpen = true },
+                        dragHandle = {
+                            SnippetDragHandle(
+                                modifier = Modifier.draggableHandle(),
+                            )
+                        },
+                    )
+                    SnippetContextMenu(
+                        expanded = menuOpen,
+                        canPaste = canPaste,
+                        onDismiss = { menuOpen = false },
+                        onEdit = { menuOpen = false; onEdit(snippet) },
+                        onCopy = { menuOpen = false; onCopy(snippet) },
+                        onPaste = { menuOpen = false; onPaste(snippet) },
+                        onDelete = { menuOpen = false; onDelete(snippet) },
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
+private fun SnippetContextMenu(
+    expanded: Boolean,
+    canPaste: Boolean,
+    onDismiss: () -> Unit,
+    onEdit: () -> Unit,
+    onCopy: () -> Unit,
+    onPaste: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+    ) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.snippet_action_edit)) },
+            onClick = onEdit,
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.snippet_action_copy)) },
+            onClick = onCopy,
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.snippet_action_paste)) },
+            onClick = onPaste,
+            enabled = canPaste,
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.snippet_action_delete)) },
+            onClick = onDelete,
+        )
+    }
+}
+
+@Composable
 private fun EditModeField(
     rawText: String,
+    editRequestedOffset: Int?,
     onTextChanged: (String) -> Unit,
+    onEditRequestApplied: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+
+    // The selection is tracked locally so the cursor does not reset when the
+    // text is re-synced from the ViewModel on every keystroke.
+    var lastSelection by remember { mutableStateOf<TextRange?>(null) }
+    val value = TextFieldValue(
+        text = rawText,
+        selection = editRequestedOffset
+            ?.let { TextRange(it.coerceIn(0, rawText.length)) }
+            ?: lastSelection?.takeIf { it.min <= rawText.length }
+            ?: TextRange(0),
+    )
+    val originalOffset = editRequestedOffset
+
+    // When a row long-press handed us a target cursor position, focus the field
+    // and raise the keyboard so the user can immediately add or edit text. The
+    // offset is captured into the local selection first so the cursor stays put
+    // after the one-shot request is consumed.
+    LaunchedEffect(originalOffset) {
+        if (originalOffset != null) {
+            lastSelection = TextRange(originalOffset.coerceIn(0, rawText.length))
+            focusRequester.requestFocus()
+            keyboard?.show()
+            onEditRequestApplied()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -355,8 +451,11 @@ private fun EditModeField(
             .imePadding(),
     ) {
         BasicTextField(
-            value = rawText,
-            onValueChange = onTextChanged,
+            value = value,
+            onValueChange = { newValue ->
+                lastSelection = newValue.selection
+                onTextChanged(newValue.text)
+            },
             textStyle = MaterialTheme.typography.bodyLarge.copy(
                 color = MaterialTheme.colorScheme.onBackground,
             ),
@@ -373,7 +472,8 @@ private fun EditModeField(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(16.dp)
+                .focusRequester(focusRequester),
         )
     }
 }

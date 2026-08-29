@@ -16,10 +16,12 @@ import com.oneclickcopy.ui.home.HomeViewModel
 
 private object Routes {
     const val HOME = "home"
-    const val EDITOR = "editor/{documentId}"
+    const val EDITOR = "editor/{documentId}?new={new}"
     const val ARG_DOCUMENT_ID = "documentId"
+    const val ARG_IS_NEW = "new"
 
-    fun editor(documentId: Long) = "editor/$documentId"
+    fun editor(documentId: Long, isNew: Boolean) =
+        "editor/$documentId?new=$isNew"
 }
 
 @Composable
@@ -29,6 +31,15 @@ fun OneClickCopyNavHost(
 ) {
     val navController = rememberNavController()
     val repository = container.documentRepository
+
+    val navigateToEditor: (Long, Boolean) -> Unit = { documentId, isNew ->
+        // Guard against duplicate destinations from rapid double taps.
+        if (navController.currentDestination?.route == Routes.HOME) {
+            navController.navigate(Routes.editor(documentId, isNew)) {
+                launchSingleTop = true
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -47,12 +58,10 @@ fun OneClickCopyNavHost(
             HomeScreen(
                 viewModel = homeViewModel,
                 onDocumentClick = { documentId ->
-                    // Guard against duplicate destinations from rapid double taps.
-                    if (navController.currentDestination?.route == Routes.HOME) {
-                        navController.navigate(Routes.editor(documentId)) {
-                            launchSingleTop = true
-                        }
-                    }
+                    navigateToEditor(documentId, false)
+                },
+                onCreateDocument = { documentId ->
+                    navigateToEditor(documentId, true)
                 },
             )
         }
@@ -61,14 +70,21 @@ fun OneClickCopyNavHost(
             route = Routes.EDITOR,
             arguments = listOf(
                 navArgument(Routes.ARG_DOCUMENT_ID) { type = NavType.LongType },
+                navArgument(Routes.ARG_IS_NEW) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
             ),
         ) { backStackEntry ->
             val documentId = backStackEntry.arguments
                 ?.getLong(Routes.ARG_DOCUMENT_ID)
                 ?: return@composable
+            val isNew = backStackEntry.arguments
+                ?.getBoolean(Routes.ARG_IS_NEW)
+                ?: false
 
             val editorViewModel: EditorViewModel = viewModel(
-                factory = EditorViewModel.factory(repository, documentId),
+                factory = EditorViewModel.factory(repository, documentId, isNew),
             )
             EditorScreen(
                 viewModel = editorViewModel,

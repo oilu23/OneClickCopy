@@ -52,6 +52,12 @@
     <string name="snippet_copied">Copied</string>
     <string name="snippet_not_copied">Not copied</string>
 
+    <!-- Snippet long-press context menu -->
+    <string name="snippet_action_edit">Edit</string>
+    <string name="snippet_action_copy">Copy</string>
+    <string name="snippet_action_paste">Paste</string>
+    <string name="snippet_action_delete">Delete</string>
+
     <!-- Errors -->
     <string name="error_create_document">Could not create document</string>
     <string name="error_delete_document">Could not delete document</string>

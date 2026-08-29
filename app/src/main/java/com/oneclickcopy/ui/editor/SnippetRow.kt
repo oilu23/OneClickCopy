@@ -1,7 +1,9 @@
 package com.oneclickcopy.ui.editor
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -39,6 +41,7 @@ import com.oneclickcopy.ui.theme.OneClickCopyTheme
  * state description, so TalkBack announces "Copy <text>, copied" instead of the
  * original's three unlabelled children.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SnippetRow(
     snippet: Snippet,
@@ -46,6 +49,7 @@ fun SnippetRow(
     onCopy: () -> Unit,
     onToggleChecked: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongPress: () -> Unit = {},
     dragHandle: @Composable () -> Unit = {},
 ) {
     val containerColor by animateColorAsState(
@@ -78,7 +82,10 @@ fun SnippetRow(
     ) {
         Row(
             modifier = Modifier
-                .clickable(onClick = onCopy)
+                .combinedClickable(
+                    onClick = onCopy,
+                    onLongClick = onLongPress,
+                )
                 .padding(horizontal = 8.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

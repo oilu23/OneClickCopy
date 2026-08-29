@@ -61,11 +61,15 @@ class EditorViewModelTest {
         return id
     }
 
+    /** Convenience: an editor starting in edit mode (a freshly created doc). */
+    private fun editor(id: Long, isNew: Boolean = true) =
+        EditorViewModel(repository, id, isNew)
+
     @Test
     fun `loads existing document into state`() = runTest(scheduler) {
         val id = seedDocument("alpha\nbeta")
 
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -75,8 +79,28 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun `opening an existing document starts in copy mode`() = runTest(scheduler) {
+        val id = seedDocument("one\ntwo")
+
+        val viewModel = editor(id, isNew = false)
+        advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value.isCopyMode).isTrue()
+    }
+
+    @Test
+    fun `creating a new document starts in edit mode`() = runTest(scheduler) {
+        val id = seedDocument("")
+
+        val viewModel = editor(id, isNew = true)
+        advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value.isCopyMode).isFalse()
+    }
+
+    @Test
     fun `flags missing document instead of crashing`() = runTest(scheduler) {
-        val viewModel = EditorViewModel(repository, 4_242L)
+        val viewModel = editor(4_242L)
         advanceUntilIdle()
 
         assertThat(viewModel.uiState.value.documentExists).isFalse()
@@ -86,7 +110,7 @@ class EditorViewModelTest {
     @Test
     fun `toggling to copy mode parses snippets`() = runTest(scheduler) {
         val id = seedDocument("one\ntwo\nthree")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
 
         viewModel.onToggleMode()
@@ -100,7 +124,7 @@ class EditorViewModelTest {
     @Test
     fun `copying a duplicate line checks only that occurrence`() = runTest(scheduler) {
         val id = seedDocument("dup\ndup")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
         viewModel.onToggleMode()
 
@@ -113,7 +137,7 @@ class EditorViewModelTest {
     @Test
     fun `copied state persists across a mode switch`() = runTest(scheduler) {
         val id = seedDocument("a\nb")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
         viewModel.onToggleMode()
         viewModel.onSnippetCopied(viewModel.uiState.value.snippets[0])
@@ -127,7 +151,7 @@ class EditorViewModelTest {
     @Test
     fun `unchecking clears only the targeted snippet`() = runTest(scheduler) {
         val id = seedDocument("a\nb")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
         viewModel.onToggleMode()
         viewModel.onSnippetCopied(viewModel.uiState.value.snippets[0])
@@ -142,7 +166,7 @@ class EditorViewModelTest {
     @Test
     fun `reset clears all checkmarks`() = runTest(scheduler) {
         val id = seedDocument("a\nb\nc")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
         viewModel.onToggleMode()
         viewModel.uiState.value.snippets.forEach(viewModel::onSnippetCopied)
@@ -157,7 +181,7 @@ class EditorViewModelTest {
     fun `reorder rewrites raw text and keeps checkmarks on the right rows`() =
         runTest(scheduler) {
             val id = seedDocument("first\nsecond\nthird")
-            val viewModel = EditorViewModel(repository, id)
+            val viewModel = editor(id)
             advanceUntilIdle()
             viewModel.onToggleMode()
             viewModel.onSnippetCopied(viewModel.uiState.value.snippets[2]) // "third"
@@ -174,7 +198,7 @@ class EditorViewModelTest {
     @Test
     fun `reorder with out of bounds index is ignored`() = runTest(scheduler) {
         val id = seedDocument("a\nb")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
         viewModel.onToggleMode()
 
@@ -185,9 +209,159 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun `long press on a row drops into edit mode with cursor at end of row`() =
+        runTest(scheduler) {
+            val id = seedDocument("one\ntwo\nthree")
+            val viewModel = editor(id)
+            advanceUntilIdle()
+            viewModel.onToggleMode() // enter copy mode
+            assertThat(viewModel.uiState.value.isCopyMode).isTrue()
+
+            viewModel.onSnippetLongPress(viewModel.uiState.value.snippets[1]) // "two"
+
+            val state = viewModel.uiState.value
+            assertThat(state.isCopyMode).isFalse()
+            // "one\ntwo\nthree": "two" ends at position 7 (o=6, then newline)
+            assertThat(state.editRequestedOffset).isEqualTo(7)
+        }
+
+    @Test
+    fun `long press cursor offset works for first and last rows`() = runTest(scheduler) {
+        val id = seedDocument("a\nbb\nccc")
+        val viewModel = editor(id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+
+        viewModel.onSnippetLongPress(viewModel.uiState.value.snippets[0]) // "a" -> 1
+        assertThat(viewModel.uiState.value.editRequestedOffset).isEqualTo(1)
+
+        viewModel.onToggleMode()
+        viewModel.onSnippetLongPress(viewModel.uiState.value.snippets[2]) // "ccc" -> 8
+        assertThat(viewModel.uiState.value.editRequestedOffset).isEqualTo(8)
+    }
+
+    @Test
+    fun `consume edit request clears the offset`() = runTest(scheduler) {
+        val id = seedDocument("one\ntwo")
+        val viewModel = editor(id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+        viewModel.onSnippetLongPress(viewModel.uiState.value.snippets[0])
+        assertThat(viewModel.uiState.value.editRequestedOffset).isNotNull()
+
+        viewModel.consumeEditRequest()
+
+        assertThat(viewModel.uiState.value.editRequestedOffset).isNull()
+    }
+
+    @Test
+    fun `copying an item enables paste`() = runTest(scheduler) {
+        val id = seedDocument("a\nb")
+        val viewModel = editor(id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+        assertThat(viewModel.uiState.value.canPaste).isFalse()
+
+        viewModel.onSnippetCopied(viewModel.uiState.value.snippets[0])
+
+        assertThat(viewModel.uiState.value.canPaste).isTrue()
+    }
+
+    @Test
+    fun `delete removes the targeted line from the document`() = runTest(scheduler) {
+        val id = seedDocument("one\ntwo\nthree")
+        val viewModel = editor(id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+        viewModel.onSnippetCopied(viewModel.uiState.value.snippets[1]) // mark "two" copied
+
+        viewModel.onSnippetDelete(viewModel.uiState.value.snippets[1])
+
+        val state = viewModel.uiState.value
+        assertThat(state.rawText).isEqualTo("one\nthree")
+        assertThat(state.snippets.map { it.text }).containsExactly("one", "three").inOrder()
+        assertThat(state.copiedCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `delete first and last lines works`() = runTest(scheduler) {
+        val id = seedDocument("one\ntwo\nthree")
+        val viewModel = editor(id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+
+        viewModel.onSnippetDelete(viewModel.uiState.value.snippets[0])
+        assertThat(viewModel.uiState.value.rawText).isEqualTo("two\nthree")
+
+        viewModel.onSnippetDelete(viewModel.uiState.value.snippets[1]) // "three"
+        assertThat(viewModel.uiState.value.rawText).isEqualTo("two")
+    }
+
+    @Test
+    fun `undo restores a deleted line`() = runTest(scheduler) {
+        val id = seedDocument("one\ntwo\nthree")
+        val viewModel = editor(id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+        viewModel.onSnippetCopied(viewModel.uiState.value.snippets[1]) // copy "two"
+        viewModel.onSnippetDelete(viewModel.uiState.value.snippets[1])
+        assertThat(viewModel.uiState.value.rawText).isEqualTo("one\nthree")
+        assertThat(viewModel.uiState.value.canUndoReorder).isTrue()
+
+        viewModel.onUndoReorder()
+
+        val state = viewModel.uiState.value
+        assertThat(state.rawText).isEqualTo("one\ntwo\nthree")
+        assertThat(state.snippets.map { it.isCopied })
+            .containsExactly(false, true, false).inOrder()
+        assertThat(state.canUndoReorder).isFalse()
+    }
+
+    @Test
+    fun `paste inserts copied item underneath the targeted row`() = runTest(scheduler) {
+        val id = seedDocument("one\ntwo\nthree")
+        val viewModel = editor(id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+        viewModel.onSnippetCopied(viewModel.uiState.value.snippets[0]) // copy "one"
+
+        viewModel.onSnippetPasteAfter(viewModel.uiState.value.snippets[1]) // paste under "two"
+
+        val state = viewModel.uiState.value
+        assertThat(state.rawText).isEqualTo("one\ntwo\none\nthree")
+        assertThat(state.snippets.map { it.text })
+            .containsExactly("one", "two", "one", "three").inOrder()
+    }
+
+    @Test
+    fun `paste with nothing copied is a no-op`() = runTest(scheduler) {
+        val id = seedDocument("one\ntwo")
+        val viewModel = editor(id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+
+        viewModel.onSnippetPasteAfter(viewModel.uiState.value.snippets[0])
+
+        assertThat(viewModel.uiState.value.rawText).isEqualTo("one\ntwo")
+    }
+
+    @Test
+    fun `paste under the last row appends`() = runTest(scheduler) {
+        val id = seedDocument("one\ntwo")
+        val viewModel = editor(id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+        viewModel.onSnippetCopied(viewModel.uiState.value.snippets[0]) // copy "one"
+
+        viewModel.onSnippetPasteAfter(viewModel.uiState.value.snippets[1]) // under "two"
+
+        assertThat(viewModel.uiState.value.rawText).isEqualTo("one\ntwo\none")
+    }
+
+    @Test
     fun `saveNow flushes pending edits immediately`() = runTest(scheduler) {
         val id = seedDocument("original")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
 
         viewModel.onTextChanged("edited before leaving")
@@ -201,7 +375,7 @@ class EditorViewModelTest {
     @Test
     fun `progress reflects copied ratio`() = runTest(scheduler) {
         val id = seedDocument("a\nb\nc\nd")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
         viewModel.onToggleMode()
 
@@ -213,7 +387,7 @@ class EditorViewModelTest {
     @Test
     fun `undo restores order and checkmarks after a reorder`() = runTest(scheduler) {
         val id = seedDocument("first\nsecond\nthird")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
         viewModel.onToggleMode()
         viewModel.onSnippetCopied(viewModel.uiState.value.snippets[2])
@@ -236,7 +410,7 @@ class EditorViewModelTest {
     @Test
     fun `undo walks back multiple reorders`() = runTest(scheduler) {
         val id = seedDocument("a\nb\nc")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
         viewModel.onToggleMode()
 
@@ -256,7 +430,7 @@ class EditorViewModelTest {
     @Test
     fun `undo with an empty stack is a no-op`() = runTest(scheduler) {
         val id = seedDocument("a\nb")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
         viewModel.onToggleMode()
 
@@ -270,7 +444,7 @@ class EditorViewModelTest {
     @Test
     fun `reordering a row onto itself does not enable undo`() = runTest(scheduler) {
         val id = seedDocument("a\nb")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
         viewModel.onToggleMode()
 
@@ -284,7 +458,7 @@ class EditorViewModelTest {
     @Test
     fun `editing the body after a reorder clears undo`() = runTest(scheduler) {
         val id = seedDocument("a\nb\nc")
-        val viewModel = EditorViewModel(repository, id)
+        val viewModel = editor(id)
         advanceUntilIdle()
         viewModel.onToggleMode()
         viewModel.onReorder(fromIndex = 2, toIndex = 0)
