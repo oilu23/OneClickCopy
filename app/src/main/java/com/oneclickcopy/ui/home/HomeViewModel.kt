@@ -200,6 +200,19 @@ class HomeViewModel(
         }
     }
 
+    /** Copies [document] under [copyTitle], already localized by the caller. */
+    fun onDuplicateDocument(document: DocumentEntity, copyTitle: String) {
+        viewModelScope.launch {
+            runCatching { repository.duplicateDocument(document, copyTitle) }
+                .onSuccess {
+                    _events.value = HomeEvent.Message(UiText.res(R.string.home_duplicated_message))
+                }
+                .onFailure {
+                    _events.value = HomeEvent.Error(UiText.res(R.string.error_duplicate_document))
+                }
+        }
+    }
+
     fun onUndoDelete(document: DocumentEntity) {
         viewModelScope.launch {
             runCatching { repository.restoreDocument(document) }

@@ -87,6 +87,26 @@ open class DocumentRepository(
             notifyChanged()
         }
 
+    /**
+     * Inserts a copy of [source] titled [title], with a fresh identity and
+     * timestamps so it backs up as its own document. Copied checkmarks are
+     * cleared: a duplicate is usually a fresh run of the same list.
+     */
+    suspend fun duplicateDocument(source: DocumentEntity, title: String): Long =
+        withContext(ioDispatcher) {
+            val now = System.currentTimeMillis()
+            dao.insert(
+                source.copy(
+                    id = 0,
+                    title = title,
+                    copiedItems = "",
+                    createdAt = now,
+                    updatedAt = now,
+                    uuid = UUID.randomUUID().toString(),
+                )
+            ).also { notifyChanged() }
+        }
+
     /** Re-inserts a deleted document, preserving its identity, for undo support. */
     suspend fun restoreDocument(document: DocumentEntity): Long =
         withContext(ioDispatcher) {

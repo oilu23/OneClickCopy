@@ -69,6 +69,30 @@ class DocumentRepositoryTest {
     }
 
     @Test
+    fun `duplicateDocument copies content with a fresh identity and no checkmarks`() = runTest {
+        val id = repository.createDocument()
+        repository.saveDocument(
+            id = id,
+            title = "Checklist",
+            content = "one\ntwo",
+            copiedKeys = setOf(com.oneclickcopy.domain.SnippetKey("one", 0)),
+        )
+        val source = repository.getDocument(id)!!
+
+        val copyId = repository.duplicateDocument(source, "Checklist (copy)")
+
+        val copy = repository.getDocument(copyId)!!
+        assertThat(copyId).isNotEqualTo(id)
+        assertThat(copy.title).isEqualTo("Checklist (copy)")
+        assertThat(copy.content).isEqualTo("one\ntwo")
+        assertThat(copy.copiedItems).isEmpty()
+        assertThat(copy.uuid).isNotEqualTo(source.uuid)
+        assertThat(copy.updatedAt).isAtLeast(source.updatedAt)
+        // The original is untouched.
+        assertThat(repository.getDocument(id)).isEqualTo(source)
+    }
+
+    @Test
     fun `saveDocument on missing id is a no-op`() = runTest {
         repository.saveDocument(9_999L, "ghost", "body", emptySet())
 

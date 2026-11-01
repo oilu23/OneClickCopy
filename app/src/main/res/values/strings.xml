@@ -13,6 +13,9 @@
     <string name="home_no_results_subtitle">No documents match \"%1$s\"</string>
     <string name="home_create_document">Create document</string>
     <string name="home_more_options">More options</string>
+    <string name="home_duplicate">Duplicate</string>
+    <string name="home_duplicate_title">%1$s (copy)</string>
+    <string name="home_duplicated_message">Document duplicated</string>
     <string name="home_delete">Delete</string>
     <string name="home_delete_confirm_title">Delete document?</string>
     <string name="home_delete_confirm_message">\"%1$s\" and its %2$d items will be deleted.</string>
@@ -61,6 +64,7 @@
 
     <!-- Errors -->
     <string name="error_create_document">Could not create document</string>
+    <string name="error_duplicate_document">Could not duplicate document</string>
     <string name="error_delete_document">Could not delete document</string>
     <string name="error_restore_document">Could not restore document</string>
     <string name="error_save_document">Could not save document</string>

@@ -40,6 +40,8 @@ import com.oneclickcopy.ui.util.formatRelativeTime
 fun DocumentRow(
     document: DocumentEntity,
     onClick: () -> Unit,
+    /** Receives the localized title for the copy. */
+    onDuplicate: (String) -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -50,6 +52,12 @@ fun DocumentRow(
     }
     val relativeTime = formatRelativeTime(document.updatedAt)
     val title = document.title.ifBlank { stringResource(R.string.document_untitled) }
+    // An untitled document's copy stays untitled rather than "Untitled (copy)".
+    val copyTitle = if (document.title.isBlank()) {
+        ""
+    } else {
+        stringResource(R.string.home_duplicate_title, document.title)
+    }
 
     Card(
         onClick = onClick,
@@ -107,6 +115,13 @@ fun DocumentRow(
                     onDismissRequest = { menuExpanded = false },
                 ) {
                     DropdownMenuItem(
+                        text = { Text(stringResource(R.string.home_duplicate)) },
+                        onClick = {
+                            menuExpanded = false
+                            onDuplicate(copyTitle)
+                        },
+                    )
+                    DropdownMenuItem(
                         text = { Text(stringResource(R.string.home_delete)) },
                         onClick = {
                             menuExpanded = false
@@ -130,6 +145,7 @@ private fun DocumentRowPreview() {
                 content = "Thanks for reaching out\nWe'll look into it\nResolved",
             ),
             onClick = {},
+            onDuplicate = {},
             onDelete = {},
         )
     }

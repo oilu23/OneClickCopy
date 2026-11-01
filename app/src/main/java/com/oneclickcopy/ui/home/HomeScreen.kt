@@ -314,6 +314,9 @@ fun HomeScreen(
                             DocumentRow(
                                 document = document,
                                 onClick = { onDocumentClick(document.id) },
+                                onDuplicate = { copyTitle ->
+                                    viewModel.onDuplicateDocument(document, copyTitle)
+                                },
                                 onDelete = { pendingDeleteId = document.id },
                             )
                         }
