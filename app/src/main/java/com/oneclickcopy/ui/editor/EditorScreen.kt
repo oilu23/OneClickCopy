@@ -3,7 +3,6 @@ package com.oneclickcopy.ui.editor
 import com.oneclickcopy.ui.icons.AppIcons
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,7 +62,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.oneclickcopy.R
-import com.oneclickcopy.ui.BackNavigationGate
 import com.oneclickcopy.ui.common.resolve
 import com.oneclickcopy.ui.theme.LocalModeColors
 import com.oneclickcopy.ui.util.ClipboardHelper
@@ -74,7 +72,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun EditorScreen(
     viewModel: EditorViewModel,
-    onNavigateBack: () -> Boolean,
+    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -115,19 +113,10 @@ fun EditorScreen(
         }
     }
 
-    // The gate latches only after Navigation accepts the pop. Right after this
-    // screen opens the destination can still be STARTED; popBackStackOnce then
-    // correctly returns false, and Back must stay enabled for a retry.
-    val exitGate = remember { BackNavigationGate() }
-    val leaveEditor: () -> Unit = { exitGate.tryLeave(onNavigateBack) }
-
-    // Intercept the system back gesture so it uses the same guarded path.
-    BackHandler(enabled = !exitGate.isLeaving) { leaveEditor() }
-
     // A missing document (deleted elsewhere, or a stale link) sends the user back.
     LaunchedEffect(uiState.documentExists, uiState.isLoading) {
         if (!uiState.documentExists && !uiState.isLoading) {
-            leaveEditor()
+            onNavigateBack()
         }
     }
 
@@ -160,7 +149,7 @@ fun EditorScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = leaveEditor, enabled = !exitGate.isLeaving) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
                             AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.editor_back),

@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.oneclickcopy.ui.OneClickCopyNavHost
+import com.oneclickcopy.ui.OneClickCopyApp
 import com.oneclickcopy.ui.theme.OneClickCopyTheme
 
 class MainActivity : ComponentActivity() {
@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background,
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    OneClickCopyNavHost(container = container)
+                    OneClickCopyApp(container = container)
                 }
             }
         }

@@ -2,6 +2,8 @@ package com.oneclickcopy.ui.editor
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
 import com.google.common.truth.Truth.assertThat
 import com.oneclickcopy.data.AppDatabase
 import com.oneclickcopy.data.DocumentRepository
@@ -405,6 +407,23 @@ class EditorViewModelTest {
 
         assertThat(repository.getDocument(id)!!.content)
             .isEqualTo("edited before leaving")
+    }
+
+    @Test
+    fun `saveNow completes even when the editor is cleared right after`() = runTest(scheduler) {
+        val id = seedDocument("original")
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider(store, EditorViewModel.factory(repository, id))[EditorViewModel::class.java]
+        advanceUntilIdle()
+
+        // Leaving the editor flushes the last edit, then clears the ViewModel,
+        // which cancels viewModelScope before the write has run.
+        viewModel.onTextChanged("typed just before back")
+        viewModel.saveNow()
+        store.clear()
+        advanceUntilIdle()
+
+        assertThat(repository.getDocument(id)!!.content).isEqualTo("typed just before back")
     }
 
     @Test

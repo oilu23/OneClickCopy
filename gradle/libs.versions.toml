@@ -6,7 +6,6 @@ composeBom = "2024.06.00"
 coreKtx = "1.13.1"
 lifecycle = "2.8.3"
 activityCompose = "1.9.0"
-navigation = "2.7.7"
 room = "2.8.5"
 coroutines = "1.8.1"
 kotlinxSerialization = "1.6.3"
@@ -37,7 +36,6 @@ compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 
-androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
 
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }

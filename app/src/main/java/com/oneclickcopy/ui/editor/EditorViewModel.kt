@@ -13,6 +13,7 @@ import com.oneclickcopy.domain.SnippetParser
 import com.oneclickcopy.ui.common.UiText
 import com.oneclickcopy.R
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -392,10 +393,12 @@ class EditorViewModel(
      *
      * Called when the editor leaves the composition so the final keystrokes are
      * never lost — the original app could drop up to 500 ms of typing on back.
+     * Runs as [NonCancellable] because leaving the editor also clears this
+     * ViewModel, which cancels [viewModelScope] right after this call.
      */
     fun saveNow() {
         autoSaveJob?.cancel()
-        viewModelScope.launch { persist() }
+        viewModelScope.launch(NonCancellable) { persist() }
     }
 
     private suspend fun persist() {
