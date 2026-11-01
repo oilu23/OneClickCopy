@@ -74,10 +74,16 @@ clients — but deleting that client in the console breaks sign-in for every use
 $ANDROID_HOME/build-tools/34.0.0/apksigner verify --print-certs \
     app/build/outputs/apk/release/app-release.apk
 
-# 4. tag and publish
-git tag -a v2.1 -m "v2.1"
-git push origin v2.1
-gh release create v2.1 app/build/outputs/apk/release/app-release.apk
+# 4. install the signed release APK on a real device, open it, and send it to
+#    the background once so a backup runs. Unit tests and debug builds do not
+#    exercise R8: v2.3.0 passed every test yet crashed at launch because R8
+#    stripped a constructor WorkManager creates by reflection.
+adb install -r app/build/outputs/apk/release/app-release.apk
+
+# 5. tag and publish
+git tag -a v2.3.1 -m "v2.3.1"
+git push origin v2.3.1
+gh release create v2.3.1 app/build/outputs/apk/release/app-release.apk
 ```
 
 `versionCode` must increase on every release or Android refuses the update.
