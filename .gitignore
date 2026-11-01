@@ -24,3 +24,9 @@ ONESHOT.md
 
 # Personal data exports - never commit
 oneclickcopy-backup-*.json
+
+# Desktop (Windows) build
+/desktop/build/
+/desktop/.gradle/
+/desktop/.kotlin/
+/desktop/packaging/dist/

@@ -1,6 +1,7 @@
 # OneClickCopy
 
 An Android app for quick one-tap text copying, with per-item copy tracking.
+A Windows desktop version lives in [`desktop/`](desktop/README.md).
 
 Write a list of snippets — one per line — then flip into **Copy mode**, where every
 line becomes a tappable row. Tap to copy to the clipboard; each row checks itself
