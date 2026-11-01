@@ -14,9 +14,9 @@ import kotlinx.serialization.json.Json
 /**
  * Plain-file export and import.
  *
- * Deliberately independent of Google sign-in: it is the escape hatch if a user
+ * Deliberately independent of cloud sign-in: it is the escape hatch if a user
  * declines an account, OAuth breaks, or the app is ever unpublished. The format
- * is the same versioned JSON used for Drive backups, so the two are compatible.
+ * is the same versioned JSON used for cloud backups, so the two are compatible.
  */
 class DocumentTransfer(
     private val context: Context,

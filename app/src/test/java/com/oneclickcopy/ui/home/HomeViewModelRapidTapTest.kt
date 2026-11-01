@@ -3,7 +3,11 @@ package com.oneclickcopy.ui.home
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
-import com.oneclickcopy.backup.DriveBackupManager
+import com.oneclickcopy.backup.github.GitHubBackup
+import com.oneclickcopy.backup.github.GitHubDeviceFlow
+import com.oneclickcopy.backup.github.GitHubGistClient
+import com.oneclickcopy.backup.github.GitHubTokenStore
+import okhttp3.OkHttpClient
 import com.oneclickcopy.data.AppDatabase
 import com.oneclickcopy.data.DocumentRepository
 import com.oneclickcopy.data.DocumentTransfer
@@ -55,13 +59,18 @@ class HomeViewModelRapidTapTest {
             .build()
         repository = DocumentRepository(database.documentDao(), dispatcher)
 
-        val drive = object : DriveBackupManager(context) {
-            override fun isSignedIn(): Boolean = false
+        // Signed out (no token), so nothing reaches the network.
+        val store = object : GitHubTokenStore {
+            override var token: String? = null
+            override var login: String? = null
+            override var gistId: String? = null
         }
+        val http = OkHttpClient()
+        val gitHub = GitHubBackup(store, GitHubDeviceFlow(http, "test"), GitHubGistClient(http), dispatcher)
         viewModel = HomeViewModel(
             repository = repository,
-            syncManager = SyncManager(context, repository, drive, SyncPreferences(context)),
-            driveBackupManager = drive,
+            syncManager = SyncManager(context, repository, gitHub, SyncPreferences(context)),
+            gitHubBackup = gitHub,
             documentTransfer = DocumentTransfer(context, repository, dispatcher),
         )
     }

@@ -10,7 +10,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.oneclickcopy.backup.BackupError
-import com.oneclickcopy.backup.DriveBackupManager
+import com.oneclickcopy.backup.BackupTransport
 import com.oneclickcopy.backup.toBackup
 import com.oneclickcopy.backup.toEntity
 import com.oneclickcopy.data.DocumentRepository
@@ -21,14 +21,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.TimeUnit
 
 /**
- * Coordinates automatic Google Drive sync.
+ * Coordinates automatic cloud backup.
  *
  * Design goals, in priority order:
  *  1. The user never has to think about backups.
  *  2. A change is never lost, even if the app is killed or offline.
  *  3. Sync never blocks or slows down local editing.
  *
- * Local storage remains the source of truth; Drive is a mirror. Uploads are
+ * Local storage remains the source of truth; the cloud copy is a mirror. Uploads are
  * debounced and delegated to [SyncWorker] via WorkManager, which provides
  * retries with backoff, a network constraint, and persistence across process
  * death and reboot.
@@ -36,14 +36,14 @@ import java.util.concurrent.TimeUnit
 class SyncManager(
     private val context: Context,
     private val repository: DocumentRepository,
-    private val driveBackupManager: DriveBackupManager,
+    private val transport: BackupTransport,
     private val preferences: SyncPreferences,
 ) {
 
     private val workManager get() = WorkManager.getInstance(context)
 
     private val _state = MutableStateFlow<SyncState>(
-        if (driveBackupManager.isSignedIn()) {
+        if (transport.isSignedIn()) {
             SyncState.Idle(preferences.lastSyncedAt)
         } else {
             SyncState.SignedOut
@@ -51,9 +51,9 @@ class SyncManager(
     )
     val state: StateFlow<SyncState> = _state.asStateFlow()
 
-    val accountEmail: String? get() = driveBackupManager.accountEmail()
+    val accountLabel: String? get() = transport.accountLabel()
 
-    fun isSignedIn(): Boolean = driveBackupManager.isSignedIn()
+    fun isSignedIn(): Boolean = transport.isSignedIn()
 
     /**
      * Requests a sync after a local change.
@@ -63,7 +63,7 @@ class SyncManager(
      * not produce a burst of API calls.
      */
     fun requestSync() {
-        if (!driveBackupManager.isSignedIn()) {
+        if (!transport.isSignedIn()) {
             _state.value = SyncState.SignedOut
             return
         }
@@ -83,7 +83,7 @@ class SyncManager(
 
     /** Uploads immediately, e.g. when the app moves to the background. */
     fun syncNow() {
-        if (!driveBackupManager.isSignedIn()) return
+        if (!transport.isSignedIn()) return
         enqueue(delayMillis = 0)
     }
 
@@ -124,13 +124,17 @@ class SyncManager(
         return runCatching {
             repository.getAllDocuments().map { it.toBackup() }
         }
-            .mapCatching { documents -> driveBackupManager.upload(documents).getOrThrow() }
+            .mapCatching { documents -> transport.upload(documents).getOrThrow() }
             .onSuccess {
                 preferences.lastSyncedAt = System.currentTimeMillis()
                 _state.value = SyncState.Idle(preferences.lastSyncedAt)
             }
             .onFailure { error ->
-                _state.value = if (!isOnline()) {
+                _state.value = if (error is BackupError.NotSignedIn) {
+                    // The token was revoked on GitHub; the transport has
+                    // already cleared it.
+                    SyncState.SignedOut
+                } else if (!isOnline()) {
                     SyncState.WaitingForNetwork
                 } else {
                     SyncState.Failed(error.message.orEmpty())
@@ -149,7 +153,7 @@ class SyncManager(
      */
     suspend fun restoreFromCloud(): Result<MergeResult> {
         _state.value = SyncState.Syncing
-        return driveBackupManager.download()
+        return transport.download()
             .mapCatching { documents ->
                 repository.mergeDocuments(documents.map { it.toEntity() })
             }
@@ -161,6 +165,8 @@ class SyncManager(
                 _state.value = if (error is BackupError.NoBackupFound) {
                     // A fresh account with no backup is a normal state, not an error.
                     SyncState.Idle(preferences.lastSyncedAt)
+                } else if (error is BackupError.NotSignedIn) {
+                    SyncState.SignedOut
                 } else {
                     SyncState.Failed(error.message ?: "Restore failed")
                 }
@@ -179,7 +185,7 @@ class SyncManager(
 
     suspend fun onSignOut() {
         workManager.cancelUniqueWork(UNIQUE_WORK_NAME)
-        driveBackupManager.signOut()
+        transport.signOut()
         preferences.lastSyncedAt = 0L
         _state.value = SyncState.SignedOut
     }

@@ -6,7 +6,7 @@ import androidx.work.WorkerParameters
 import com.oneclickcopy.OneClickCopyApplication
 
 /**
- * Uploads the local database to Drive.
+ * Uploads the local database to the cloud backup.
  *
  * Running as a [CoroutineWorker] is what makes sync durable: WorkManager
  * persists the request to disk, so a pending upload survives the app being

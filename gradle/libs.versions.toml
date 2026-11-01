@@ -14,10 +14,7 @@ kotlinxSerialization = "1.6.3"
 reorderable = "2.1.1"
 work = "2.9.0"
 lifecycleProcess = "2.8.3"
-playServicesAuth = "21.2.0"
-googleApiClient = "2.6.0"
-googleApiDrive = "v3-rev20240509-2.0.0"
-googleHttpGson = "1.44.2"
+okhttp = "4.12.0"
 junit = "4.13.2"
 androidxTestExt = "1.2.1"
 robolectric = "4.12.2"
@@ -59,10 +56,8 @@ androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version
 androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
 androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycleProcess" }
 
-play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
-google-api-client-android = { module = "com.google.api-client:google-api-client-android", version.ref = "googleApiClient" }
-google-api-services-drive = { module = "com.google.apis:google-api-services-drive", version.ref = "googleApiDrive" }
-google-http-client-gson = { module = "com.google.http-client:google-http-client-gson", version.ref = "googleHttpGson" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
