@@ -1,10 +1,13 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    kotlin("jvm") version "1.9.24"
-    kotlin("plugin.serialization") version "1.9.24"
-    id("org.jetbrains.compose") version "1.6.11"
+    kotlin("jvm") version "2.4.21"
+    kotlin("plugin.serialization") version "2.4.21"
+    kotlin("plugin.compose") version "2.4.21"
+    id("org.jetbrains.compose") version "1.12.2"
 }
+
+val composeVersion = "1.12.2"
 
 group = "com.oneclickcopy"
 version = "2.2.0"
@@ -15,7 +18,7 @@ version = "2.2.0"
 // as a raw srcDir, because the same Android packages also hold Room- and
 // Context-bound files that cannot compile here. The desktop build supplies its
 // own DocumentEntity, DocumentDao and GitHubTokenStore in their place.
-val sharedSources by tasks.registering(Sync::class) {
+val sharedSources = tasks.register<Sync>("sharedSources") {
     from("../app/src/main/java") {
         include(
             "com/oneclickcopy/domain/**",
@@ -32,7 +35,7 @@ val sharedSources by tasks.registering(Sync::class) {
 }
 
 // The pure-JVM domain tests from the Android app run here as well.
-val sharedTests by tasks.registering(Sync::class) {
+val sharedTests = tasks.register<Sync>("sharedTests") {
     from("../app/src/test/java") {
         include(
             "com/oneclickcopy/domain/**",
@@ -63,18 +66,19 @@ dependencies {
     // `run` works anywhere; pass -Ptarget=windows to produce the Windows jar.
     implementation(
         when (val target = findProperty("target")?.toString()) {
-            "windows" -> compose.desktop.windows_x64
-            "linux" -> compose.desktop.linux_x64
+            "windows" -> "org.jetbrains.compose.desktop:desktop-jvm-windows-x64:$composeVersion"
+            "linux" -> "org.jetbrains.compose.desktop:desktop-jvm-linux-x64:$composeVersion"
             null -> compose.desktop.currentOs
             else -> error("Unknown target: $target")
         }
     )
-    implementation(compose.material3)
-    implementation(compose.materialIconsExtended)
+    implementation("org.jetbrains.compose.material3:material3:1.9.0")
+    // Final release of the extended icon set; it is no longer updated.
+    implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("sh.calvin.reorderable:reorderable:2.1.1")
+    implementation("sh.calvin.reorderable:reorderable:3.1.0")
     // Windows DPAPI, used to encrypt the GitHub token at rest.
     implementation("net.java.dev.jna:jna-platform:5.14.0")
 

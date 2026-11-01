@@ -49,7 +49,7 @@ abstract class AppDatabase : RoomDatabase() {
                     ids.forEach { id ->
                         db.execSQL(
                             "UPDATE documents SET uuid = ? WHERE id = ?",
-                            arrayOf(UUID.randomUUID().toString(), id),
+                            arrayOf<Any>(UUID.randomUUID().toString(), id),
                         )
                     }
                 }

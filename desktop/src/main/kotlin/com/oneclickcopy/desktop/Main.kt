@@ -11,7 +11,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -75,6 +76,14 @@ private const val DEFAULT_HEIGHT = 780
 private const val SCREEN_MARGIN = 24
 private const val MIN_VISIBLE = 120
 
+/** Window and taskbar icon, read from the classpath. */
+private fun loadAppIcon(): BitmapPainter {
+    val bytes = checkNotNull(Thread.currentThread().contextClassLoader.getResourceAsStream("icon.png")) {
+        "icon.png missing from resources"
+    }.use { it.readBytes() }
+    return BitmapPainter(org.jetbrains.skia.Image.makeFromEncoded(bytes).toComposeImageBitmap())
+}
+
 private data class OpenDocument(val id: Long, val isNew: Boolean)
 
 fun main() {
@@ -95,6 +104,7 @@ fun main() {
             position = WindowPosition(initial.x.dp, initial.y.dp),
         )
         val shortcuts = remember { KeyShortcuts() }
+        val appIcon = remember { loadAppIcon() }
         var alwaysOnTop by remember { mutableStateOf(container.settings.alwaysOnTop) }
         var openDocument by remember { mutableStateOf<OpenDocument?>(null) }
         var editor by remember { mutableStateOf<EditorViewModel?>(null) }
@@ -132,7 +142,7 @@ fun main() {
             onCloseRequest = ::quit,
             state = windowState,
             title = Strings.APP_NAME,
-            icon = painterResource("icon.png"),
+            icon = appIcon,
             alwaysOnTop = alwaysOnTop,
             onPreviewKeyEvent = { event ->
                 event.type == KeyEventType.KeyDown && shortcuts.handler?.invoke(event) == true
