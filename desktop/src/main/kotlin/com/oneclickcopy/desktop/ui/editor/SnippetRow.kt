@@ -1,0 +1,107 @@
+package com.oneclickcopy.desktop.ui.editor
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DragIndicator
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.isSecondaryPressed
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.oneclickcopy.domain.Snippet
+import java.awt.Cursor
+
+/** A single clickable copy row. Right-click (or a long press) opens its menu. */
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
+@Composable
+fun SnippetRow(
+    snippet: Snippet,
+    isDragging: Boolean,
+    onCopy: () -> Unit,
+    onToggleChecked: () -> Unit,
+    onContextMenu: () -> Unit,
+    modifier: Modifier = Modifier,
+    dragHandle: @Composable () -> Unit = {},
+) {
+    val containerColor by animateColorAsState(
+        targetValue = when {
+            isDragging -> MaterialTheme.colorScheme.surfaceContainerHighest
+            snippet.isCopied -> MaterialTheme.colorScheme.surfaceContainerLow
+            else -> MaterialTheme.colorScheme.surfaceContainer
+        },
+        label = "snippetContainer",
+    )
+    val contentAlpha = if (snippet.isCopied) 0.55f else 1f
+
+    Surface(
+        color = containerColor,
+        shape = RoundedCornerShape(12.dp),
+        tonalElevation = if (isDragging) 6.dp else 0.dp,
+        shadowElevation = if (isDragging) 8.dp else 0.dp,
+        modifier = modifier
+            .fillMaxWidth()
+            .onPointerEvent(PointerEventType.Press) {
+                if (it.buttons.isSecondaryPressed) onContextMenu()
+            },
+    ) {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .combinedClickable(onClick = onCopy, onLongClick = onContextMenu)
+                .pointerHoverIcon(PointerIcon.Hand)
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            dragHandle()
+            Text(
+                text = snippet.text,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+            )
+            Icon(
+                imageVector = if (snippet.isCopied) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                contentDescription = null,
+                tint = if (snippet.isCopied) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(onClick = onToggleChecked),
+            )
+        }
+    }
+}
+
+@Composable
+fun SnippetDragHandle(modifier: Modifier = Modifier) {
+    Icon(
+        imageVector = Icons.Default.DragIndicator,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.outline,
+        modifier = modifier.size(24.dp).pointerHoverIcon(PointerIcon(Cursor(Cursor.MOVE_CURSOR))),
+    )
+}

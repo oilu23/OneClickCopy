@@ -32,6 +32,9 @@ jobs:
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --stacktrace
 
+      - name: Desktop tests
+        run: ./gradlew -p desktop test --stacktrace
+
       - name: Android Lint
         run: ./gradlew lintDebug --stacktrace
 
