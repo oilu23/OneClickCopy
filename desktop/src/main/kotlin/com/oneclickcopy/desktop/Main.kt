@@ -139,6 +139,19 @@ fun main() {
             },
         ) {
             window.minimumSize = java.awt.Dimension(380, 480)
+            // Window.background also fills the frame before Compose draws its
+            // first frame, avoiding a white flash on startup and resize.
+            window.background = java.awt.Color(0x000000)
+            LaunchedEffect(window) {
+                // Neutral00 caption to match the app background, Neutral90 text,
+                // Neutral20 border (see ui/theme/Color.kt).
+                WindowsTitleBar.applyDark(
+                    window,
+                    caption = java.awt.Color(0x000000),
+                    text = java.awt.Color(0xE3E3E3),
+                    border = java.awt.Color(0x242424),
+                )
+            }
             LaunchedEffect(Unit) {
                 instance.listen {
                     java.awt.EventQueue.invokeLater {
