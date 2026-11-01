@@ -68,3 +68,13 @@ place; documents are never touched.
 
 On a Windows machine with WiX available, `./gradlew -p desktop packageMsi`
 builds an MSI installer instead.
+
+### Release zip
+
+Each GitHub release attaches `OneClickCopy-<version>-windows-x64.zip` for
+people who just want to install. It holds the `dist\OneClickCopy` app folder
+from `package-windows.ps1` plus `install-windows.ps1`, `Install.cmd` (the
+double-click entry point, which bypasses PowerShell's script policy for this
+one script) and `README-windows.txt` renamed to `README.txt`, all inside one
+top-level `OneClickCopy-<version>-windows-x64` folder. Build it on Windows
+with `tar.exe -a -c -f <name>.zip <name>` so entries use forward slashes.
