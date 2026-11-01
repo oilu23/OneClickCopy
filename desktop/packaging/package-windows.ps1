@@ -4,13 +4,13 @@
   OneClickCopy.exe and a trimmed Java runtime, using jpackage.
 
 .EXAMPLE
-  .\package-windows.ps1 -Jar OneClickCopy-2.2.0.jar -Jdk C:\jdk-17 -Out .\dist
+  .\package-windows.ps1 -Jar OneClickCopy-2.3.0.jar -Jdk C:\jdk-17 -Out .\dist
 #>
 param(
     [Parameter(Mandatory)] [string] $Jar,
     [Parameter(Mandatory)] [string] $Jdk,
     [string] $Out = (Join-Path $PSScriptRoot 'dist'),
-    [string] $Version = '2.2.0'
+    [string] $Version = '2.3.0'
 )
 $ErrorActionPreference = 'Stop'
 

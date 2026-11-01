@@ -10,7 +10,7 @@ plugins {
 val composeVersion = "1.12.2"
 
 group = "com.oneclickcopy"
-version = "2.2.0"
+version = "2.3.0"
 
 // Platform-independent code shared verbatim with the Android app: snippet
 // parsing, copied-state encoding, the repository, the backup format and the
@@ -97,7 +97,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Exe)
             packageName = "OneClickCopy"
-            packageVersion = "2.2.0"
+            packageVersion = "2.3.0"
             description = "One-tap text copying with per-item tracking"
             vendor = "OneClickCopy"
             windows {

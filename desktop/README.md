@@ -56,7 +56,7 @@ on Linux. The output lands in `desktop/build/compose/jars/`.
 On the Windows machine, with a JDK 17 unpacked (for `jpackage`):
 
 ```powershell
-.\packaging\package-windows.ps1 -Jar OneClickCopy-2.2.0.jar -Jdk C:\path\to\jdk-17
+.\packaging\package-windows.ps1 -Jar OneClickCopy-2.3.0.jar -Jdk C:\path\to\jdk-17
 .\packaging\install-windows.ps1
 ```
 
