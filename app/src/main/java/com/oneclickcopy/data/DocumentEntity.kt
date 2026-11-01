@@ -1,12 +1,10 @@
 package com.oneclickcopy.data
 
-import androidx.room.ColumnInfo
-import androidx.room.Entity
-import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
-@Entity(tableName = "documents")
+/** One snippet list. Persisted by [JsonFileDocumentDao]; shared by both apps. */
+@Serializable
 data class DocumentEntity(
-    @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val title: String = "",
     val content: String = "",
@@ -19,6 +17,5 @@ data class DocumentEntity(
      * cycles. Row ids are device-local, so restoring previously duplicated every
      * document; matching on this UUID makes restore idempotent.
      */
-    @ColumnInfo(defaultValue = "")
     val uuid: String = "",
 )

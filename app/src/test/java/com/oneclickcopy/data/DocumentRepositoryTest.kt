@@ -1,6 +1,7 @@
 package com.oneclickcopy.data
 
-import androidx.room.Room
+import org.junit.rules.TemporaryFolder
+import org.junit.Rule
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import com.oneclickcopy.domain.SnippetKey
@@ -9,7 +10,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,26 +21,20 @@ import org.robolectric.annotation.Config
 @Config(sdk = [33])
 class DocumentRepositoryTest {
 
-    private lateinit var database: AppDatabase
+    @get:Rule val temp = TemporaryFolder()
+    private lateinit var dao: JsonFileDocumentDao
     private lateinit var repository: DocumentRepository
 
     @Before
     fun setUp() {
-        database = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            AppDatabase::class.java,
-        ).allowMainThreadQueries().build()
+        dao = JsonFileDocumentDao(temp.root.toPath().resolve("documents.json"))
 
         repository = DocumentRepository(
-            dao = database.documentDao(),
+            dao = dao,
             ioDispatcher = UnconfinedTestDispatcher(),
         )
     }
 
-    @After
-    fun tearDown() {
-        database.close()
-    }
 
     @Test
     fun `createDocument assigns a non-empty uuid`() = runTest {

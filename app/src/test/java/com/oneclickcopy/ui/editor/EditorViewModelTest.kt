@@ -1,11 +1,12 @@
 package com.oneclickcopy.ui.editor
 
-import androidx.room.Room
+import com.oneclickcopy.data.JsonFileDocumentDao
+import org.junit.rules.TemporaryFolder
+import org.junit.Rule
 import androidx.test.core.app.ApplicationProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import com.google.common.truth.Truth.assertThat
-import com.oneclickcopy.data.AppDatabase
 import com.oneclickcopy.data.DocumentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,30 +31,19 @@ class EditorViewModelTest {
 
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = StandardTestDispatcher(scheduler)
-    private lateinit var database: AppDatabase
+    @get:Rule val temp = TemporaryFolder()
+    private lateinit var dao: JsonFileDocumentDao
     private lateinit var repository: DocumentRepository
 
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
-        database = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            AppDatabase::class.java,
-        )
-            // Route Room's internal query/transaction work onto the test
-            // dispatcher. Without this, Room hops to a real background thread and
-            // advanceUntilIdle() returns before fire-and-forget ViewModel loads
-            // have completed, making these tests flaky.
-            .setQueryExecutor(dispatcher.asExecutor())
-            .setTransactionExecutor(dispatcher.asExecutor())
-            .allowMainThreadQueries()
-            .build()
-        repository = DocumentRepository(database.documentDao(), dispatcher)
+        dao = JsonFileDocumentDao(temp.root.toPath().resolve("documents.json"))
+        repository = DocumentRepository(dao, dispatcher)
     }
 
     @After
     fun tearDown() {
-        database.close()
         Dispatchers.resetMain()
     }
 

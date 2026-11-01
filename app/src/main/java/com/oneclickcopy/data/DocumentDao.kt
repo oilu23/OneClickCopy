@@ -1,42 +1,29 @@
 package com.oneclickcopy.data
 
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
-@Dao
+/** The persistence contract [DocumentRepository] is written against. */
 interface DocumentDao {
 
-    @Query("SELECT * FROM documents ORDER BY updatedAt DESC")
+    /** All documents, most recently updated first. */
     fun observeAll(): Flow<List<DocumentEntity>>
 
-    @Query("SELECT * FROM documents WHERE id = :id")
     suspend fun getById(id: Long): DocumentEntity?
 
-    @Query("SELECT * FROM documents WHERE uuid = :uuid LIMIT 1")
     suspend fun getByUuid(uuid: String): DocumentEntity?
 
-    @Query("SELECT * FROM documents")
     suspend fun getAllOnce(): List<DocumentEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    /** Inserts, or replaces a row with the same non-zero id. Returns the row id. */
     suspend fun insert(document: DocumentEntity): Long
 
-    @Update
     suspend fun update(document: DocumentEntity)
 
-    @Delete
     suspend fun delete(document: DocumentEntity)
 
     /**
-     * Deletes documents that were auto-created but never given a title or body.
-     * Prevents the "empty Untitled" rows the original app accumulated whenever a
-     * user tapped + and immediately backed out.
+     * Deletes the document only if both its title and body are empty, so a
+     * created-then-abandoned document does not linger as an empty "Untitled".
      */
-    @Query("DELETE FROM documents WHERE id = :id AND title = '' AND content = ''")
     suspend fun deleteIfEmpty(id: Long)
 }

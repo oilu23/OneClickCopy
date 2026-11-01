@@ -1,13 +1,14 @@
 package com.oneclickcopy.sync
 
+import com.oneclickcopy.data.JsonFileDocumentDao
+import org.junit.rules.TemporaryFolder
+import org.junit.Rule
 import android.content.Context
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import com.oneclickcopy.backup.BackupDocument
 import com.oneclickcopy.backup.BackupError
 import com.oneclickcopy.backup.BackupTransport
-import com.oneclickcopy.data.AppDatabase
 import com.oneclickcopy.data.DocumentRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.asExecutor
@@ -15,7 +16,6 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,7 +39,8 @@ class SyncManagerFailureTest {
     private val dispatcher = StandardTestDispatcher(scheduler)
 
     private lateinit var context: Context
-    private lateinit var database: AppDatabase
+    @get:Rule val temp = TemporaryFolder()
+    private lateinit var dao: JsonFileDocumentDao
     private lateinit var repository: DocumentRepository
 
     /** Transport stub that fails with [error], so no network is touched. */
@@ -59,16 +60,10 @@ class SyncManagerFailureTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
-            .setQueryExecutor(dispatcher.asExecutor())
-            .setTransactionExecutor(dispatcher.asExecutor())
-            .allowMainThreadQueries()
-            .build()
-        repository = DocumentRepository(database.documentDao(), dispatcher)
+        dao = JsonFileDocumentDao(temp.root.toPath().resolve("documents.json"))
+        repository = DocumentRepository(dao, dispatcher)
     }
 
-    @After
-    fun tearDown() = database.close()
 
     private fun manager(transport: BackupTransport) = SyncManager(
         context = context,
@@ -96,7 +91,7 @@ class SyncManagerFailureTest {
         // propagated out of performUpload, through SyncWorker.doWork, and killed
         // the worker while the UI stayed on "Syncing" forever.
         val throwingRepository = object : DocumentRepository(
-            database.documentDao(),
+            dao,
             dispatcher,
         ) {
             override suspend fun getAllDocuments(): List<com.oneclickcopy.data.DocumentEntity> =

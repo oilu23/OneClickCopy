@@ -15,14 +15,17 @@ version = "2.2.0"
 // Platform-independent code shared verbatim with the Android app: snippet
 // parsing, copied-state encoding, the repository, the backup format and the
 // GitHub gist transport. Copied into a generated source dir rather than added
-// as a raw srcDir, because the same Android packages also hold Room- and
-// Context-bound files that cannot compile here. The desktop build supplies its
-// own DocumentEntity, DocumentDao and GitHubTokenStore in their place.
+// as a raw srcDir, because the same Android packages also hold Context-bound
+// files that cannot compile here. The desktop build supplies its own
+// GitHubTokenStore in their place.
 val sharedSources = tasks.register<Sync>("sharedSources") {
     from("../app/src/main/java") {
         include(
             "com/oneclickcopy/domain/**",
+            "com/oneclickcopy/data/DocumentDao.kt",
+            "com/oneclickcopy/data/DocumentEntity.kt",
             "com/oneclickcopy/data/DocumentRepository.kt",
+            "com/oneclickcopy/data/JsonFileDocumentDao.kt",
             "com/oneclickcopy/backup/BackupPayload.kt",
             "com/oneclickcopy/backup/BackupTransport.kt",
             "com/oneclickcopy/backup/github/GitHubBackup.kt",
@@ -41,6 +44,7 @@ val sharedTests = tasks.register<Sync>("sharedTests") {
         include(
             "com/oneclickcopy/domain/**",
             "com/oneclickcopy/backup/BackupPayloadTest.kt",
+            "com/oneclickcopy/data/JsonFileDocumentDaoTest.kt",
         )
     }
     into(layout.buildDirectory.dir("generated/sharedTest/kotlin"))

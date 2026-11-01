@@ -3,5 +3,7 @@
     <include domain="sharedpref" path="."/>
     <!-- Encrypted with a device-bound key; useless on another device. -->
     <exclude domain="sharedpref" path="github_auth.xml"/>
+    <include domain="file" path="documents.json"/>
+    <!-- Pre-2.3 installs: imported into documents.json on first launch. -->
     <include domain="database" path="."/>
 </full-backup-content>

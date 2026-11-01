@@ -6,15 +6,15 @@ dark UI, same Edit/Copy modes, same backup format.
 ## What is shared with Android
 
 The build copies these sources from `../app` verbatim, so fixes land in both
-apps: snippet parsing and copied-state encoding (`domain/`),
-`DocumentRepository`, the backup payload, the GitHub gist transport and
-`SyncState`. The pure-JVM domain tests from `app/src/test` run here too.
+apps: snippet parsing and copied-state encoding (`domain/`), the JSON document
+store and `DocumentRepository`, the backup payload, the GitHub gist transport,
+`SyncState` and the app icons. The pure-JVM tests for those from
+`app/src/test` run here too.
 
 Desktop-specific pieces:
 
 | Android                         | Windows                                        |
 |---------------------------------|------------------------------------------------|
-| Room database                   | `JsonFileDocumentDao`: one JSON file, atomic writes |
 | Android Keystore token storage  | Windows DPAPI (`FileGitHubTokenStore`)         |
 | WorkManager sync                | Coroutine debounce + exponential backoff, flushed on exit |
 | Long-press                      | Right-click (long-press also works)            |

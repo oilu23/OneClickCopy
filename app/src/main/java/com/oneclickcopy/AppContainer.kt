@@ -6,9 +6,10 @@ import com.oneclickcopy.backup.github.GitHubBackup
 import com.oneclickcopy.backup.github.GitHubDeviceFlow
 import com.oneclickcopy.backup.github.GitHubGistClient
 import com.oneclickcopy.backup.github.KeystoreGitHubTokenStore
-import com.oneclickcopy.data.AppDatabase
 import com.oneclickcopy.data.DocumentRepository
 import com.oneclickcopy.data.DocumentTransfer
+import com.oneclickcopy.data.JsonFileDocumentDao
+import com.oneclickcopy.data.LegacyDatabaseImport
 import com.oneclickcopy.sync.SyncManager
 import com.oneclickcopy.sync.SyncPreferences
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +20,7 @@ import java.util.concurrent.TimeUnit
  * Minimal manual dependency container.
  *
  * Deliberately not Hilt: the graph is a handful of objects, and manual
- * construction keeps the build free of DI annotation processing while remaining
+ * construction keeps the build free of annotation processing while remaining
  * trivially swappable in tests.
  */
 interface AppContainer {
@@ -35,11 +36,15 @@ class DefaultAppContainer(context: Context) : AppContainer {
     // screen, so holding an Activity here would leak it across rotations.
     private val context: Context = context.applicationContext
 
-    private val database by lazy { AppDatabase.get(context) }
+    private val documentStore by lazy {
+        val file = context.filesDir.resolve(DOCUMENTS_FILE)
+        LegacyDatabaseImport.importIfNeeded(context, file)
+        JsonFileDocumentDao(file.toPath())
+    }
 
     override val documentRepository: DocumentRepository by lazy {
         DocumentRepository(
-            dao = database.documentDao(),
+            dao = documentStore,
             ioDispatcher = Dispatchers.IO,
         ).also { repository ->
             // Every local write requests a sync. The repository stays unaware of
@@ -74,5 +79,9 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val documentTransfer: DocumentTransfer by lazy {
         DocumentTransfer(context, documentRepository)
+    }
+
+    private companion object {
+        const val DOCUMENTS_FILE = "documents.json"
     }
 }

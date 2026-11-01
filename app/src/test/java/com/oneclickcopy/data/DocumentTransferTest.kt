@@ -1,7 +1,8 @@
 package com.oneclickcopy.data
 
+import org.junit.rules.TemporaryFolder
+import org.junit.Rule
 import android.net.Uri
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -9,7 +10,6 @@ import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,24 +25,19 @@ class DocumentTransferTest {
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = StandardTestDispatcher(scheduler)
 
-    private lateinit var database: AppDatabase
+    @get:Rule val temp = TemporaryFolder()
+    private lateinit var dao: JsonFileDocumentDao
     private lateinit var repository: DocumentRepository
     private lateinit var transfer: DocumentTransfer
 
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
-            .setQueryExecutor(dispatcher.asExecutor())
-            .setTransactionExecutor(dispatcher.asExecutor())
-            .allowMainThreadQueries()
-            .build()
-        repository = DocumentRepository(database.documentDao(), dispatcher)
+        dao = JsonFileDocumentDao(temp.root.toPath().resolve("documents.json"))
+        repository = DocumentRepository(dao, dispatcher)
         transfer = DocumentTransfer(context, repository, dispatcher)
     }
 
-    @After
-    fun tearDown() = database.close()
 
     @Test
     fun `export then import round trips documents`() = runTest(scheduler) {

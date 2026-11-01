@@ -24,9 +24,8 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.openjsse.**
 
-# ---- Room ----
--keep class * extends androidx.room.RoomDatabase
--dontwarn androidx.room.paging.**
+# ---- Document store ----
+-keep class com.oneclickcopy.data.DocumentEntity { *; }
 
 # ---- App backup payload ----
 -keep class com.oneclickcopy.backup.BackupPayload { *; }

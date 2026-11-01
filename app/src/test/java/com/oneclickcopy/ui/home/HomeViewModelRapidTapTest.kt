@@ -1,6 +1,8 @@
 package com.oneclickcopy.ui.home
 
-import androidx.room.Room
+import com.oneclickcopy.data.JsonFileDocumentDao
+import org.junit.rules.TemporaryFolder
+import org.junit.Rule
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import com.oneclickcopy.backup.github.GitHubBackup
@@ -8,7 +10,6 @@ import com.oneclickcopy.backup.github.GitHubDeviceFlow
 import com.oneclickcopy.backup.github.GitHubGistClient
 import com.oneclickcopy.backup.github.GitHubTokenStore
 import okhttp3.OkHttpClient
-import com.oneclickcopy.data.AppDatabase
 import com.oneclickcopy.data.DocumentRepository
 import com.oneclickcopy.data.DocumentTransfer
 import com.oneclickcopy.sync.SyncManager
@@ -44,7 +45,8 @@ class HomeViewModelRapidTapTest {
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = StandardTestDispatcher(scheduler)
 
-    private lateinit var database: AppDatabase
+    @get:Rule val temp = TemporaryFolder()
+    private lateinit var dao: JsonFileDocumentDao
     private lateinit var repository: DocumentRepository
     private lateinit var viewModel: HomeViewModel
 
@@ -52,12 +54,8 @@ class HomeViewModelRapidTapTest {
     fun setUp() {
         Dispatchers.setMain(dispatcher)
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
-            .setQueryExecutor(dispatcher.asExecutor())
-            .setTransactionExecutor(dispatcher.asExecutor())
-            .allowMainThreadQueries()
-            .build()
-        repository = DocumentRepository(database.documentDao(), dispatcher)
+        dao = JsonFileDocumentDao(temp.root.toPath().resolve("documents.json"))
+        repository = DocumentRepository(dao, dispatcher)
 
         // Signed out (no token), so nothing reaches the network.
         val store = object : GitHubTokenStore {
@@ -77,7 +75,6 @@ class HomeViewModelRapidTapTest {
 
     @After
     fun tearDown() {
-        database.close()
         Dispatchers.resetMain()
     }
 

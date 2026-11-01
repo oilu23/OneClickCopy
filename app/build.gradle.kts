@@ -5,7 +5,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.ksp)
 }
 
 // Signing credentials live in keystore.properties, which is gitignored.
@@ -48,9 +47,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-        }
     }
 
     buildTypes {
@@ -78,15 +74,6 @@ android {
 
     buildFeatures {
         compose = true
-    }
-
-    // Room's MigrationTestHelper resolves exported schemas from assets. Local
-    // unit tests do not package assets the way instrumented tests do, so the
-    // schema directory is added to the test resources instead.
-    sourceSets {
-        getByName("test") {
-            resources.srcDir("$projectDir/schemas")
-        }
     }
 
     testOptions {
@@ -140,10 +127,6 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
 
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
-
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
 
@@ -160,7 +143,6 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.robolectric)
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.androidx.room.testing)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.androidx.work.testing)
     testImplementation(platform(libs.compose.bom))

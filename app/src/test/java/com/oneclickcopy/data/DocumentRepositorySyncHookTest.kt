@@ -1,6 +1,7 @@
 package com.oneclickcopy.data
 
-import androidx.room.Room
+import org.junit.rules.TemporaryFolder
+import org.junit.Rule
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -8,7 +9,6 @@ import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,29 +31,21 @@ class DocumentRepositorySyncHookTest {
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = StandardTestDispatcher(scheduler)
 
-    private lateinit var database: AppDatabase
+    @get:Rule val temp = TemporaryFolder()
+    private lateinit var dao: JsonFileDocumentDao
     private lateinit var repository: DocumentRepository
     private var changeCount = 0
 
     @Before
     fun setUp() {
-        database = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            AppDatabase::class.java,
-        )
-            .setQueryExecutor(dispatcher.asExecutor())
-            .setTransactionExecutor(dispatcher.asExecutor())
-            .allowMainThreadQueries()
-            .build()
+        dao = JsonFileDocumentDao(temp.root.toPath().resolve("documents.json"))
 
         changeCount = 0
-        repository = DocumentRepository(database.documentDao(), dispatcher).apply {
+        repository = DocumentRepository(dao, dispatcher).apply {
             onChanged = { changeCount++ }
         }
     }
 
-    @After
-    fun tearDown() = database.close()
 
     @Test
     fun `creating a document requests a sync`() = runTest(scheduler) {

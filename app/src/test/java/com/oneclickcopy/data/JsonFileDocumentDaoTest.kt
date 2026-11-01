@@ -48,13 +48,21 @@ class JsonFileDocumentDaoTest {
     }
 
     @Test
+    fun seedKeepsIdsAndContinuesNumberingAfterThem() = runBlocking<Unit> {
+        JsonFileDocumentDao.seed(file, listOf(DocumentEntity(id = 4, title = "a"), DocumentEntity(id = 9, title = "b")))
+        val repo = repository()
+        assertThat(repo.getDocument(9)!!.title).isEqualTo("b")
+        assertThat(repo.createDocument()).isEqualTo(10)
+    }
+
+    @Test
     fun corruptFileIsSetAsideNotOverwritten() = runBlocking<Unit> {
-        Files.writeString(file, "{ not json")
+        Files.write(file, "{ not json".toByteArray())
         val repo = repository()
         assertThat(repo.getAllDocuments()).isEmpty()
         repo.createDocument()
         val aside = Files.list(temp.root.toPath()).use { s -> s.filter { it.fileName.toString().contains(".corrupt-") }.toList() }
         assertThat(aside).hasSize(1)
-        assertThat(Files.readString(aside.single())).isEqualTo("{ not json")
+        assertThat(String(Files.readAllBytes(aside.single()))).isEqualTo("{ not json")
     }
 }

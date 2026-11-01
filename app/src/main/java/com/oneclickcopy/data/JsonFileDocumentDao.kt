@@ -13,7 +13,8 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 
 /**
- * Stores every document in one JSON file.
+ * Stores every document in one JSON file. Used by both the Android and the
+ * Windows app.
  *
  * A personal snippet library is small, so the whole set is held in memory and
  * the file is rewritten on each change. Writes go to a temp file that is then
@@ -95,7 +96,7 @@ class JsonFileDocumentDao(private val file: Path) : DocumentDao {
 
     private fun load(): Store {
         if (!Files.exists(file)) return Store()
-        val raw = Files.readString(file)
+        val raw = String(Files.readAllBytes(file), Charsets.UTF_8)
         if (raw.isBlank()) return Store()
         return runCatching { json.decodeFromString(Store.serializer(), raw) }
             .getOrElse {
@@ -105,14 +106,33 @@ class JsonFileDocumentDao(private val file: Path) : DocumentDao {
             }
     }
 
-    private fun write(store: Store) {
-        Files.createDirectories(file.parent)
-        val temp = file.resolveSibling("${file.fileName}.tmp")
-        Files.writeString(temp, json.encodeToString(Store.serializer(), store))
-        try {
-            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
-        } catch (e: AtomicMoveNotSupportedException) {
-            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING)
+    private fun write(store: Store) = writeAtomically(file, json.encodeToString(Store.serializer(), store))
+
+    companion object {
+        private val seedJson = Json { encodeDefaults = true; prettyPrint = true }
+
+        /**
+         * Creates [file] holding [documents], keeping their ids. Used once, to
+         * carry documents over from the old Room database on Android.
+         */
+        fun seed(file: Path, documents: List<DocumentEntity>) {
+            val store = Store(
+                nextId = (documents.maxOfOrNull { it.id } ?: 0) + 1,
+                documents = documents,
+            )
+            writeAtomically(file, seedJson.encodeToString(Store.serializer(), store))
+        }
+
+        /** Writes to a temp file, then moves it over [file]: readers never see half a file. */
+        private fun writeAtomically(file: Path, text: String) {
+            file.parent?.let { Files.createDirectories(it) }
+            val temp = file.resolveSibling("${file.fileName}.tmp")
+            Files.write(temp, text.toByteArray(Charsets.UTF_8))
+            try {
+                Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+            } catch (e: AtomicMoveNotSupportedException) {
+                Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING)
+            }
         }
     }
 }
