@@ -318,6 +318,41 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun `duplicate inserts a copy underneath and is undoable`() = runTest(scheduler) {
+        val id = seedDocument("one\ntwo\nthree\ntwo")
+        val viewModel = editor(id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+        viewModel.onSnippetCopied(viewModel.uiState.value.snippets[3]) // second "two"
+
+        viewModel.onSnippetDuplicate(viewModel.uiState.value.snippets[1]) // first "two"
+
+        val state = viewModel.uiState.value
+        assertThat(state.rawText).isEqualTo("one\ntwo\ntwo\nthree\ntwo")
+        // The new copy is unchecked; the later "two" keeps its copied state.
+        assertThat(state.snippets.map { it.isCopied })
+            .containsExactly(false, false, false, false, true).inOrder()
+        assertThat(state.canUndoReorder).isTrue()
+
+        viewModel.onUndoReorder()
+        assertThat(viewModel.uiState.value.rawText).isEqualTo("one\ntwo\nthree\ntwo")
+        assertThat(viewModel.uiState.value.snippets.map { it.isCopied })
+            .containsExactly(false, false, false, true).inOrder()
+    }
+
+    @Test
+    fun `duplicate the last row appends`() = runTest(scheduler) {
+        val id = seedDocument("one\ntwo")
+        val viewModel = editor(id)
+        advanceUntilIdle()
+        viewModel.onToggleMode()
+
+        viewModel.onSnippetDuplicate(viewModel.uiState.value.snippets[1])
+
+        assertThat(viewModel.uiState.value.rawText).isEqualTo("one\ntwo\ntwo")
+    }
+
+    @Test
     fun `paste inserts copied item underneath the targeted row`() = runTest(scheduler) {
         val id = seedDocument("one\ntwo\nthree")
         val viewModel = editor(id)

@@ -177,6 +177,26 @@ class EditorViewModel(
     }
 
     /**
+     * Inserts a copy of [snippet] as a new line immediately below it. The copy
+     * starts unchecked, and later rows with the same text keep their copied
+     * state. Undoable via the existing Undo action.
+     */
+    fun onSnippetDuplicate(snippet: Snippet) {
+        val state = _uiState.value
+        val newText = insertLineAfter(state.rawText, snippet.sourceLineIndex, snippet.text) ?: return
+        pushReorderUndo(state)
+        // The copy takes occurrence + 1, so later same-text rows shift down by one.
+        copiedKeys = copiedKeys.map { key ->
+            if (key.text == snippet.text && key.occurrence > snippet.occurrence) {
+                key.copy(occurrence = key.occurrence + 1)
+            } else {
+                key
+            }
+        }.toSet()
+        rewriteDocument(newText)
+    }
+
+    /**
      * Pastes the last-copied item's text as a new line immediately below
      * [snippet]. A no-op if nothing has been copied yet.
      */

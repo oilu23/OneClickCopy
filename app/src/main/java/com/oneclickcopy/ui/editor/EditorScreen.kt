@@ -264,6 +264,7 @@ fun EditorScreen(
                         onReorder = viewModel::onReorder,
                         onEdit = viewModel::onSnippetLongPress,
                         onPaste = viewModel::onSnippetPasteAfter,
+                        onDuplicate = viewModel::onSnippetDuplicate,
                         onDelete = viewModel::onSnippetDelete,
                         canPaste = uiState.canPaste,
                     )
@@ -289,6 +290,7 @@ private fun CopyModeList(
     onReorder: (Int, Int) -> Unit,
     onEdit: (com.oneclickcopy.domain.Snippet) -> Unit,
     onPaste: (com.oneclickcopy.domain.Snippet) -> Unit,
+    onDuplicate: (com.oneclickcopy.domain.Snippet) -> Unit,
     onDelete: (com.oneclickcopy.domain.Snippet) -> Unit,
     canPaste: Boolean,
 ) {
@@ -366,6 +368,7 @@ private fun CopyModeList(
                         onEdit = { menuOpen = false; onEdit(snippet) },
                         onCopy = { menuOpen = false; onCopy(snippet) },
                         onPaste = { menuOpen = false; onPaste(snippet) },
+                        onDuplicate = { menuOpen = false; onDuplicate(snippet) },
                         onDelete = { menuOpen = false; onDelete(snippet) },
                     )
                 }
@@ -382,6 +385,7 @@ private fun SnippetContextMenu(
     onEdit: () -> Unit,
     onCopy: () -> Unit,
     onPaste: () -> Unit,
+    onDuplicate: () -> Unit,
     onDelete: () -> Unit,
 ) {
     DropdownMenu(
@@ -400,6 +404,10 @@ private fun SnippetContextMenu(
             text = { Text(stringResource(R.string.snippet_action_paste)) },
             onClick = onPaste,
             enabled = canPaste,
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.snippet_action_duplicate)) },
+            onClick = onDuplicate,
         )
         DropdownMenuItem(
             text = { Text(stringResource(R.string.snippet_action_delete)) },

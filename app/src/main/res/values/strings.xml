@@ -56,6 +56,7 @@
     <string name="snippet_action_edit">Edit</string>
     <string name="snippet_action_copy">Copy</string>
     <string name="snippet_action_paste">Paste</string>
+    <string name="snippet_action_duplicate">Duplicate</string>
     <string name="snippet_action_delete">Delete</string>
 
     <!-- Errors -->
