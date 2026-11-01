@@ -21,3 +21,6 @@ keystore.properties
 
 # Local build-spec dump, not part of the app
 ONESHOT.md
+
+# Personal data exports - never commit
+oneclickcopy-backup-*.json

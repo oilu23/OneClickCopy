@@ -51,7 +51,7 @@ fun OneClickCopyNavHost(
                 factory = HomeViewModel.factory(
                     repository = repository,
                     syncManager = container.syncManager,
-                    driveBackupManager = container.driveBackupManager,
+                    gitHubBackup = container.gitHubBackup,
                     documentTransfer = container.documentTransfer,
                 ),
             )

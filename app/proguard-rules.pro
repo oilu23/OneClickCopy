@@ -18,23 +18,11 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
-# ---- Google API client / Drive ----
-# Model classes are populated reflectively from JSON.
--keep class com.google.api.client.** { *; }
--keep class com.google.api.services.drive.** { *; }
--keepclassmembers class * {
-    @com.google.api.client.util.Key <fields>;
-}
--dontwarn com.google.api.client.**
--dontwarn com.google.common.**
-
-# The Google HTTP client references optional javax/Joda types that are absent
-# on Android; without these the release build fails on missing classes.
--dontwarn javax.naming.**
--dontwarn java.awt.**
--dontwarn org.joda.time.**
--dontwarn org.apache.http.**
--dontwarn android.net.http.AndroidHttpClient
+# ---- OkHttp ----
+# OkHttp ships its own consumer rules; these silence optional TLS providers.
+-dontwarn org.bouncycastle.**
+-dontwarn org.conscrypt.**
+-dontwarn org.openjsse.**
 
 # ---- Room ----
 -keep class * extends androidx.room.RoomDatabase

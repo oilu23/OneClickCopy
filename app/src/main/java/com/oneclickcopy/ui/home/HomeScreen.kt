@@ -14,8 +14,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.common.api.ApiException
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -89,17 +87,7 @@ fun HomeScreen(
     var pendingDeleteId by rememberSaveable { mutableStateOf<Long?>(null) }
     val searchFocusRequester = remember { FocusRequester() }
 
-    val signInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-        try {
-            task.getResult(ApiException::class.java)
-            viewModel.onSignInSucceeded()
-        } catch (e: ApiException) {
-            viewModel.onSignInFailed(e.statusCode.toString())
-        }
-    }
+    val signInState by viewModel.signInState.collectAsStateWithLifecycle()
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument(DocumentTransfer.MIME_TYPE),
@@ -215,15 +203,15 @@ fun HomeScreen(
                                     leadingIcon = { Icon(Icons.Default.AccountCircle, null) },
                                     onClick = {
                                         accountMenuExpanded = false
-                                        signInLauncher.launch(viewModel.signInIntent())
+                                        viewModel.onSignInClicked()
                                     },
                                 )
                             } else {
-                                uiState.accountEmail?.let { email ->
+                                uiState.accountLabel?.let { account ->
                                     DropdownMenuItem(
                                         text = {
                                             Text(
-                                                stringResource(R.string.sync_signed_in_as, email),
+                                                stringResource(R.string.sync_signed_in_as, account),
                                                 style = MaterialTheme.typography.bodySmall,
                                             )
                                         },
@@ -348,6 +336,11 @@ fun HomeScreen(
             pendingDeleteId = null
         }
     }
+
+    GitHubSignInDialog(
+        state = signInState,
+        onCancel = viewModel::onSignInCancelled,
+    )
 
     if (documentPendingDelete != null) {
         DeleteDocumentDialog(

@@ -4,7 +4,7 @@ import com.oneclickcopy.data.DocumentEntity
 import kotlinx.serialization.Serializable
 
 /**
- * Wire format for the Drive backup file.
+ * Wire format for the backup file (cloud backup and file export).
  *
  * Explicitly versioned and decoupled from the Room entity so a future schema
  * change cannot silently corrupt older backups.
@@ -48,3 +48,31 @@ fun BackupDocument.toEntity(): DocumentEntity = DocumentEntity(
     updatedAt = if (updatedAt > 0) updatedAt else System.currentTimeMillis(),
     uuid = uuid,
 )
+
+/** Reads and writes the backup file shared by every transport. */
+object BackupCodec {
+
+    private val json = kotlinx.serialization.json.Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
+
+    fun encode(documents: List<BackupDocument>): String =
+        json.encodeToString(BackupPayload.serializer(), BackupPayload(documents = documents))
+
+    /**
+     * Parses a backup, accepting the current versioned payload and the original
+     * bare-array format. Blank input is an empty backup.
+     */
+    fun decode(raw: String): List<BackupDocument> {
+        if (raw.isBlank()) return emptyList()
+        return runCatching {
+            json.decodeFromString(BackupPayload.serializer(), raw).documents
+        }.getOrElse {
+            json.decodeFromString(
+                kotlinx.serialization.builtins.ListSerializer(BackupDocument.serializer()),
+                raw,
+            )
+        }
+    }
+}

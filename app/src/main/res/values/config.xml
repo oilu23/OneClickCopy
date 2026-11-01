@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-      OAuth web client ID used for Google Sign-In.
-      Kept as a resource (not a source constant) so build variants can override it.
+      Client ID of the GitHub OAuth App used for backup sign-in (device flow).
+      Not a secret: device flow needs no client secret. Create the app under
+      GitHub > Settings > Developer settings > OAuth Apps, tick
+      "Enable Device Flow", and paste its Client ID here.
     -->
-    <string name="default_web_client_id" translatable="false">611391687410-eoru9cihkk7n67lgba0m3jnqr5gfsrti.apps.googleusercontent.com</string>
+    <string name="github_client_id" translatable="false">Ov23liqbv4Y86IVrE1BS</string>
 </resources>

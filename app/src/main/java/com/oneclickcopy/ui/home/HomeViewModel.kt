@@ -1,6 +1,5 @@
 package com.oneclickcopy.ui.home
 
-import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -8,13 +7,16 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.oneclickcopy.R
-import com.oneclickcopy.backup.DriveBackupManager
+import com.oneclickcopy.backup.github.DeviceCode
+import com.oneclickcopy.backup.github.GitHubBackup
 import com.oneclickcopy.data.DocumentEntity
 import com.oneclickcopy.data.DocumentRepository
 import com.oneclickcopy.data.DocumentTransfer
 import com.oneclickcopy.sync.SyncManager
 import com.oneclickcopy.sync.SyncState
 import com.oneclickcopy.ui.common.UiText
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,10 +30,17 @@ data class HomeUiState(
     val documents: List<DocumentEntity> = emptyList(),
     val searchQuery: String = "",
     val syncState: SyncState = SyncState.SignedOut,
-    val accountEmail: String? = null,
+    val accountLabel: String? = null,
 ) {
     val isSearching: Boolean get() = searchQuery.isNotBlank()
     val isSignedIn: Boolean get() = syncState !is SyncState.SignedOut
+}
+
+/** Progress of the GitHub device-flow sign-in dialog. */
+sealed interface GitHubSignInState {
+    data object Hidden : GitHubSignInState
+    data object RequestingCode : GitHubSignInState
+    data class AwaitingApproval(val code: DeviceCode) : GitHubSignInState
 }
 
 sealed interface HomeEvent {
@@ -43,7 +52,7 @@ sealed interface HomeEvent {
 class HomeViewModel(
     private val repository: DocumentRepository,
     private val syncManager: SyncManager,
-    private val driveBackupManager: DriveBackupManager,
+    private val gitHubBackup: GitHubBackup,
     private val documentTransfer: DocumentTransfer,
 ) : ViewModel() {
 
@@ -51,6 +60,10 @@ class HomeViewModel(
 
     private val _events = MutableStateFlow<HomeEvent?>(null)
     val events: StateFlow<HomeEvent?> = _events.asStateFlow()
+
+    private val _signInState = MutableStateFlow<GitHubSignInState>(GitHubSignInState.Hidden)
+    val signInState: StateFlow<GitHubSignInState> = _signInState.asStateFlow()
+    private var signInJob: Job? = null
 
     /** Prevents a double tap on the create button from making two documents. */
     private var isCreatingDocument = false
@@ -74,7 +87,7 @@ class HomeViewModel(
                 documents = filtered,
                 searchQuery = query,
                 syncState = syncState,
-                accountEmail = syncManager.accountEmail,
+                accountLabel = syncManager.accountLabel,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -82,13 +95,51 @@ class HomeViewModel(
             initialValue = HomeUiState(),
         )
 
-    fun signInIntent(): Intent = driveBackupManager.signInIntent()
+    /**
+     * Starts GitHub sign-in: fetches a one-time code for the dialog, then waits
+     * in the background while the user approves it in the browser.
+     */
+    fun onSignInClicked() {
+        signInJob?.cancel()
+        signInJob = viewModelScope.launch {
+            _signInState.value = GitHubSignInState.RequestingCode
+            val code = gitHubBackup.startSignIn().getOrElse {
+                if (it is CancellationException) throw it
+                signInFailed(it)
+                return@launch
+            }
+            _signInState.value = GitHubSignInState.AwaitingApproval(code)
+            gitHubBackup.completeSignIn(code)
+                .onSuccess {
+                    _signInState.value = GitHubSignInState.Hidden
+                    onSignInSucceeded()
+                }
+                .onFailure {
+                    if (it is CancellationException) throw it
+                    signInFailed(it)
+                }
+        }
+    }
+
+    /** The user closed the sign-in dialog; stop waiting for approval. */
+    fun onSignInCancelled() {
+        signInJob?.cancel()
+        signInJob = null
+        _signInState.value = GitHubSignInState.Hidden
+    }
+
+    private fun signInFailed(error: Throwable) {
+        _signInState.value = GitHubSignInState.Hidden
+        _events.value = HomeEvent.Error(
+            UiText.res(R.string.backup_sign_in_failed, error.localizedMessage.orEmpty())
+        )
+    }
 
     /**
      * Completes sign-in: pulls the cloud copy, merges it in, then pushes local
      * documents up. Runs on every sign-in so a reinstall always recovers data.
      */
-    fun onSignInSucceeded() {
+    private fun onSignInSucceeded() {
         viewModelScope.launch {
             syncManager.onSignedIn()
                 .onSuccess { merge ->
@@ -105,10 +156,6 @@ class HomeViewModel(
                     )
                 }
         }
-    }
-
-    fun onSignInFailed(detail: String) {
-        _events.value = HomeEvent.Error(UiText.res(R.string.backup_sign_in_failed, detail))
     }
 
     fun onSignOut() {
@@ -202,11 +249,11 @@ class HomeViewModel(
         fun factory(
             repository: DocumentRepository,
             syncManager: SyncManager,
-            driveBackupManager: DriveBackupManager,
+            gitHubBackup: GitHubBackup,
             documentTransfer: DocumentTransfer,
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                HomeViewModel(repository, syncManager, driveBackupManager, documentTransfer)
+                HomeViewModel(repository, syncManager, gitHubBackup, documentTransfer)
             }
         }
     }

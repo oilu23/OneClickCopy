@@ -5,7 +5,8 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import com.oneclickcopy.backup.BackupDocument
-import com.oneclickcopy.backup.DriveBackupManager
+import com.oneclickcopy.backup.BackupError
+import com.oneclickcopy.backup.BackupTransport
 import com.oneclickcopy.data.AppDatabase
 import com.oneclickcopy.data.DocumentRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -41,13 +42,18 @@ class SyncManagerFailureTest {
     private lateinit var database: AppDatabase
     private lateinit var repository: DocumentRepository
 
-    /** Drive stub that fails, so no network is touched. */
-    private class FailingDrive(context: Context) : DriveBackupManager(context) {
-        override fun isSignedIn(): Boolean = true
+    /** Transport stub that fails with [error], so no network is touched. */
+    private class FailingTransport(
+        private val signedIn: Boolean = true,
+        private val error: Throwable = IllegalStateException("boom"),
+    ) : BackupTransport {
+        override fun isSignedIn(): Boolean = signedIn
+        override fun accountLabel(): String? = null
+        override suspend fun signOut() = Unit
         override suspend fun upload(documents: List<BackupDocument>): Result<Unit> =
-            Result.failure(IllegalStateException("upload boom"))
+            Result.failure(error)
         override suspend fun download(): Result<List<BackupDocument>> =
-            Result.failure(IllegalStateException("download boom"))
+            Result.failure(error)
     }
 
     @Before
@@ -64,17 +70,17 @@ class SyncManagerFailureTest {
     @After
     fun tearDown() = database.close()
 
-    private fun manager(drive: DriveBackupManager) = SyncManager(
+    private fun manager(transport: BackupTransport) = SyncManager(
         context = context,
         repository = repository,
-        driveBackupManager = drive,
+        transport = transport,
         preferences = SyncPreferences(context),
     )
 
     @Test
     fun `upload failure resolves to a terminal state rather than throwing`() =
         runTest(scheduler) {
-            val syncManager = manager(FailingDrive(context))
+            val syncManager = manager(FailingTransport())
 
             val result = syncManager.performUpload()
             advanceUntilIdle()
@@ -99,7 +105,7 @@ class SyncManagerFailureTest {
         val syncManager = SyncManager(
             context = context,
             repository = throwingRepository,
-            driveBackupManager = FailingDrive(context),
+            transport = FailingTransport(),
             preferences = SyncPreferences(context),
         )
 
@@ -114,7 +120,7 @@ class SyncManagerFailureTest {
 
     @Test
     fun `restore failure resolves to a terminal state`() = runTest(scheduler) {
-        val syncManager = manager(FailingDrive(context))
+        val syncManager = manager(FailingTransport())
 
         val result = syncManager.restoreFromCloud()
         advanceUntilIdle()
@@ -125,9 +131,7 @@ class SyncManagerFailureTest {
 
     @Test
     fun `requesting sync while signed out reports signed out`() = runTest(scheduler) {
-        val signedOut = object : DriveBackupManager(context) {
-            override fun isSignedIn(): Boolean = false
-        }
+        val signedOut = FailingTransport(signedIn = false)
         val syncManager = manager(signedOut)
 
         syncManager.requestSync()
@@ -137,13 +141,20 @@ class SyncManagerFailureTest {
 
     @Test
     fun `syncNow while signed out is a no-op and does not throw`() = runTest(scheduler) {
-        val signedOut = object : DriveBackupManager(context) {
-            override fun isSignedIn(): Boolean = false
-        }
+        val signedOut = FailingTransport(signedIn = false)
         val syncManager = manager(signedOut)
 
         syncManager.syncNow()
         advanceUntilIdle()
+
+        assertThat(syncManager.state.value).isEqualTo(SyncState.SignedOut)
+    }
+
+    @Test
+    fun `a revoked token during upload shows signed out`() = runTest(scheduler) {
+        val syncManager = manager(FailingTransport(error = BackupError.NotSignedIn))
+
+        syncManager.performUpload()
 
         assertThat(syncManager.state.value).isEqualTo(SyncState.SignedOut)
     }

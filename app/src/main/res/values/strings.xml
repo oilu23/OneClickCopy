@@ -84,7 +84,14 @@
     <string name="transfer_imported">Imported %1$d documents</string>
 
     <!-- Backup -->
-    <string name="backup_sign_in">Sign in with Google</string>
+    <string name="backup_sign_in">Sign in with GitHub</string>
+    <string name="github_sign_in_title">Sign in with GitHub</string>
+    <string name="github_sign_in_requesting">Getting a sign-in code…</string>
+    <string name="github_sign_in_instructions">Enter this code on GitHub to let OneClickCopy back up to a secret gist:</string>
+    <string name="github_sign_in_open">Copy code and open GitHub</string>
+    <string name="github_sign_in_waiting">Waiting for approval…</string>
+    <string name="github_sign_in_cancel">Cancel</string>
+    <string name="github_sign_in_code_copied">Code copied</string>
     <string name="backup_sign_out">Sign out</string>
     <string name="backup_sign_in_failed">Sign-in failed: %1$s</string>
     <string name="backup_signed_out">Signed out</string>

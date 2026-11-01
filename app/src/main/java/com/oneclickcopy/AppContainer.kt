@@ -1,13 +1,19 @@
 package com.oneclickcopy
 
 import android.content.Context
-import com.oneclickcopy.backup.DriveBackupManager
+import com.oneclickcopy.R
+import com.oneclickcopy.backup.github.GitHubBackup
+import com.oneclickcopy.backup.github.GitHubDeviceFlow
+import com.oneclickcopy.backup.github.GitHubGistClient
+import com.oneclickcopy.backup.github.KeystoreGitHubTokenStore
 import com.oneclickcopy.data.AppDatabase
 import com.oneclickcopy.data.DocumentRepository
 import com.oneclickcopy.data.DocumentTransfer
 import com.oneclickcopy.sync.SyncManager
 import com.oneclickcopy.sync.SyncPreferences
 import kotlinx.coroutines.Dispatchers
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
 /**
  * Minimal manual dependency container.
@@ -18,7 +24,7 @@ import kotlinx.coroutines.Dispatchers
  */
 interface AppContainer {
     val documentRepository: DocumentRepository
-    val driveBackupManager: DriveBackupManager
+    val gitHubBackup: GitHubBackup
     val syncManager: SyncManager
     val documentTransfer: DocumentTransfer
 }
@@ -37,20 +43,31 @@ class DefaultAppContainer(context: Context) : AppContainer {
             ioDispatcher = Dispatchers.IO,
         ).also { repository ->
             // Every local write requests a sync. The repository stays unaware of
-            // Drive; it just announces that something changed.
+            // the backup provider; it just announces that something changed.
             repository.onChanged = { syncManager.requestSync() }
         }
     }
 
-    override val driveBackupManager: DriveBackupManager by lazy {
-        DriveBackupManager(context)
+    private val httpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    override val gitHubBackup: GitHubBackup by lazy {
+        GitHubBackup(
+            store = KeystoreGitHubTokenStore(context),
+            deviceFlow = GitHubDeviceFlow(httpClient, context.getString(R.string.github_client_id)),
+            gists = GitHubGistClient(httpClient),
+        )
     }
 
     override val syncManager: SyncManager by lazy {
         SyncManager(
             context = context,
             repository = documentRepository,
-            driveBackupManager = driveBackupManager,
+            transport = gitHubBackup,
             preferences = SyncPreferences(context),
         )
     }
