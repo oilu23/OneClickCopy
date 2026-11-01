@@ -1,5 +1,6 @@
 package com.oneclickcopy.ui.home
 
+import com.oneclickcopy.ui.icons.AppIcons
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,18 +16,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material.icons.filled.FileUpload
 import com.oneclickcopy.data.DocumentTransfer
 import com.oneclickcopy.ui.common.resolve
-import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -179,7 +170,7 @@ fun HomeScreen(
                         }
                     ) {
                         Icon(
-                            imageVector = if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
+                            imageVector = if (isSearchActive) AppIcons.Close else AppIcons.Search,
                             contentDescription = stringResource(
                                 if (isSearchActive) R.string.home_search_close
                                 else R.string.home_search_open
@@ -189,7 +180,7 @@ fun HomeScreen(
                     Box {
                         IconButton(onClick = { accountMenuExpanded = true }) {
                             Icon(
-                                Icons.Default.AccountCircle,
+                                AppIcons.AccountCircle,
                                 contentDescription = stringResource(R.string.sync_account_menu),
                             )
                         }
@@ -200,7 +191,7 @@ fun HomeScreen(
                             if (!uiState.isSignedIn) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.backup_sign_in)) },
-                                    leadingIcon = { Icon(Icons.Default.AccountCircle, null) },
+                                    leadingIcon = { Icon(AppIcons.AccountCircle, null) },
                                     onClick = {
                                         accountMenuExpanded = false
                                         viewModel.onSignInClicked()
@@ -222,7 +213,7 @@ fun HomeScreen(
                                 }
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.sync_now)) },
-                                    leadingIcon = { Icon(Icons.Default.CloudUpload, null) },
+                                    leadingIcon = { Icon(AppIcons.CloudUpload, null) },
                                     onClick = {
                                         accountMenuExpanded = false
                                         viewModel.onSyncNow()
@@ -230,7 +221,7 @@ fun HomeScreen(
                                 )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.backup_sign_out)) },
-                                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
+                                    leadingIcon = { Icon(AppIcons.Logout, null) },
                                     onClick = {
                                         accountMenuExpanded = false
                                         viewModel.onSignOut()
@@ -244,7 +235,7 @@ fun HomeScreen(
                             // with no account and no network.
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.transfer_export)) },
-                                leadingIcon = { Icon(Icons.Default.FileDownload, null) },
+                                leadingIcon = { Icon(AppIcons.FileDownload, null) },
                                 onClick = {
                                     accountMenuExpanded = false
                                     exportLauncher.launch(DocumentTransfer.defaultFileName())
@@ -252,7 +243,7 @@ fun HomeScreen(
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.transfer_import)) },
-                                leadingIcon = { Icon(Icons.Default.FileUpload, null) },
+                                leadingIcon = { Icon(AppIcons.FileUpload, null) },
                                 onClick = {
                                     accountMenuExpanded = false
                                     importLauncher.launch(arrayOf(DocumentTransfer.MIME_TYPE))
@@ -275,7 +266,7 @@ fun HomeScreen(
                 shape = CircleShape,
             ) {
                 Icon(
-                    Icons.Default.Add,
+                    AppIcons.Add,
                     contentDescription = stringResource(R.string.home_create_document),
                 )
             }
@@ -368,7 +359,7 @@ private fun EmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
-            imageVector = if (isSearching) Icons.Default.Search else Icons.Outlined.Description,
+            imageVector = if (isSearching) AppIcons.Search else AppIcons.Description,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
             modifier = Modifier.size(64.dp),

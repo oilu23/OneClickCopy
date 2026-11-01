@@ -1,5 +1,6 @@
 package com.oneclickcopy.ui.editor
 
+import com.oneclickcopy.ui.icons.AppIcons
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -9,10 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DragIndicator
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -104,9 +101,9 @@ fun SnippetRow(
 
             Icon(
                 imageVector = if (snippet.isCopied) {
-                    Icons.Outlined.CheckCircle
+                    AppIcons.CheckCircleOutline
                 } else {
-                    Icons.Outlined.RadioButtonUnchecked
+                    AppIcons.RadioButtonUnchecked
                 },
                 contentDescription = null,
                 tint = if (snippet.isCopied) {
@@ -126,7 +123,7 @@ fun SnippetRow(
 @Composable
 fun SnippetDragHandle(modifier: Modifier = Modifier) {
     Icon(
-        imageVector = Icons.Default.DragIndicator,
+        imageVector = AppIcons.DragIndicator,
         contentDescription = null,
         tint = MaterialTheme.colorScheme.outline,
         modifier = modifier.size(24.dp),

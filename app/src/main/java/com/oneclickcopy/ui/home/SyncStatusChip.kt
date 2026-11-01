@@ -1,16 +1,11 @@
 package com.oneclickcopy.ui.home
 
+import com.oneclickcopy.ui.icons.AppIcons
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.CloudQueue
-import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,12 +34,12 @@ fun SyncStatusChip(
     modifier: Modifier = Modifier,
 ) {
     val (icon, labelRes) = when (state) {
-        is SyncState.SignedOut -> Icons.Default.CloudOff to R.string.sync_signed_out
-        is SyncState.Idle -> Icons.Default.CloudDone to R.string.sync_up_to_date
-        is SyncState.Pending -> Icons.Default.CloudQueue to R.string.sync_pending
-        is SyncState.Syncing -> Icons.Default.CloudSync to R.string.sync_in_progress
-        is SyncState.WaitingForNetwork -> Icons.Default.CloudOff to R.string.sync_waiting_network
-        is SyncState.Failed -> Icons.Default.ErrorOutline to R.string.sync_failed_short
+        is SyncState.SignedOut -> AppIcons.CloudOff to R.string.sync_signed_out
+        is SyncState.Idle -> AppIcons.CloudDone to R.string.sync_up_to_date
+        is SyncState.Pending -> AppIcons.CloudQueue to R.string.sync_pending
+        is SyncState.Syncing -> AppIcons.CloudSync to R.string.sync_in_progress
+        is SyncState.WaitingForNetwork -> AppIcons.CloudOff to R.string.sync_waiting_network
+        is SyncState.Failed -> AppIcons.ErrorOutline to R.string.sync_failed_short
     }
 
     val tint by animateColorAsState(

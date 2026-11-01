@@ -29,6 +29,7 @@ val sharedSources = tasks.register<Sync>("sharedSources") {
             "com/oneclickcopy/backup/github/GitHubDeviceFlow.kt",
             "com/oneclickcopy/backup/github/GitHubGistClient.kt",
             "com/oneclickcopy/sync/SyncState.kt",
+            "com/oneclickcopy/ui/icons/AppIcons.kt",
         )
     }
     into(layout.buildDirectory.dir("generated/shared/kotlin"))
@@ -73,8 +74,6 @@ dependencies {
         }
     )
     implementation("org.jetbrains.compose.material3:material3:1.9.0")
-    // Final release of the extended icon set; it is no longer updated.
-    implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")

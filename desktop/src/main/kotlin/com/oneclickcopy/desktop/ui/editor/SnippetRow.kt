@@ -1,5 +1,6 @@
 package com.oneclickcopy.desktop.ui.editor
 
+import com.oneclickcopy.ui.icons.AppIcons
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -9,10 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DragIndicator
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -84,7 +81,7 @@ fun SnippetRow(
                 modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
             )
             Icon(
-                imageVector = if (snippet.isCopied) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                imageVector = if (snippet.isCopied) AppIcons.CheckCircleOutline else AppIcons.RadioButtonUnchecked,
                 contentDescription = null,
                 tint = if (snippet.isCopied) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                 modifier = Modifier
@@ -99,7 +96,7 @@ fun SnippetRow(
 @Composable
 fun SnippetDragHandle(modifier: Modifier = Modifier) {
     Icon(
-        imageVector = Icons.Default.DragIndicator,
+        imageVector = AppIcons.DragIndicator,
         contentDescription = null,
         tint = MaterialTheme.colorScheme.outline,
         modifier = modifier.size(24.dp).pointerHoverIcon(PointerIcon(Cursor(Cursor.MOVE_CURSOR))),

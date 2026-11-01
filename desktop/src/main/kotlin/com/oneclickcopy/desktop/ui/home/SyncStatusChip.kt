@@ -1,16 +1,11 @@
 package com.oneclickcopy.desktop.ui.home
 
+import com.oneclickcopy.ui.icons.AppIcons
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.CloudQueue
-import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,12 +24,12 @@ import com.oneclickcopy.sync.SyncState
 @Composable
 fun SyncStatusChip(state: SyncState, modifier: Modifier = Modifier) {
     val (icon, label) = when (state) {
-        is SyncState.SignedOut -> Icons.Default.CloudOff to Strings.SYNC_SIGNED_OUT
-        is SyncState.Idle -> Icons.Default.CloudDone to Strings.SYNC_UP_TO_DATE
-        is SyncState.Pending -> Icons.Default.CloudQueue to Strings.SYNC_PENDING
-        is SyncState.Syncing -> Icons.Default.CloudSync to Strings.SYNC_IN_PROGRESS
-        is SyncState.WaitingForNetwork -> Icons.Default.CloudOff to Strings.SYNC_WAITING_NETWORK
-        is SyncState.Failed -> Icons.Default.ErrorOutline to Strings.SYNC_FAILED_SHORT
+        is SyncState.SignedOut -> AppIcons.CloudOff to Strings.SYNC_SIGNED_OUT
+        is SyncState.Idle -> AppIcons.CloudDone to Strings.SYNC_UP_TO_DATE
+        is SyncState.Pending -> AppIcons.CloudQueue to Strings.SYNC_PENDING
+        is SyncState.Syncing -> AppIcons.CloudSync to Strings.SYNC_IN_PROGRESS
+        is SyncState.WaitingForNetwork -> AppIcons.CloudOff to Strings.SYNC_WAITING_NETWORK
+        is SyncState.Failed -> AppIcons.ErrorOutline to Strings.SYNC_FAILED_SHORT
     }
     val tint by animateColorAsState(
         targetValue = when (state) {

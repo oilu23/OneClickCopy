@@ -1,5 +1,6 @@
 package com.oneclickcopy.desktop.ui.editor
 
+import com.oneclickcopy.ui.icons.AppIcons
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.VerticalScrollbar
@@ -23,12 +24,6 @@ import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -170,7 +165,7 @@ fun EditorScreen(
                 navigationIcon = {
                     Tooltip(Strings.EDITOR_BACK) {
                         IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = Strings.EDITOR_BACK)
+                            Icon(AppIcons.ArrowBack, contentDescription = Strings.EDITOR_BACK)
                         }
                     }
                 },
@@ -178,12 +173,12 @@ fun EditorScreen(
                     if (uiState.isCopyMode && uiState.totalCount > 0) {
                         Tooltip(Strings.EDITOR_UNDO_REORDER) {
                             IconButton(onClick = viewModel::onUndoReorder, enabled = uiState.canUndoReorder) {
-                                Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = Strings.EDITOR_UNDO_REORDER)
+                                Icon(AppIcons.Undo, contentDescription = Strings.EDITOR_UNDO_REORDER)
                             }
                         }
                         Tooltip(Strings.EDITOR_RESET_CHECKS) {
                             IconButton(onClick = viewModel::onResetChecks, enabled = uiState.copiedCount > 0) {
-                                Icon(Icons.Default.Refresh, contentDescription = Strings.EDITOR_RESET_CHECKS)
+                                Icon(AppIcons.Refresh, contentDescription = Strings.EDITOR_RESET_CHECKS)
                             }
                         }
                     }
@@ -246,7 +241,7 @@ private fun CopyModeList(
             verticalArrangement = Arrangement.Center,
         ) {
             Icon(
-                Icons.Default.TouchApp,
+                AppIcons.TouchApp,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
                 modifier = Modifier.size(56.dp),
@@ -383,7 +378,7 @@ private fun ModeToggle(isCopyMode: Boolean, onToggle: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    if (isCopyMode) Icons.Default.TouchApp else Icons.Default.EditNote,
+                    if (isCopyMode) AppIcons.TouchApp else AppIcons.EditNote,
                     contentDescription = null,
                     tint = contentColor,
                     modifier = Modifier.size(18.dp),

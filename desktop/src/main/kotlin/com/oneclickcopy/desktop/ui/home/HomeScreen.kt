@@ -1,5 +1,6 @@
 package com.oneclickcopy.desktop.ui.home
 
+import com.oneclickcopy.ui.icons.AppIcons
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,18 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material.icons.filled.FileUpload
-import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -172,7 +161,7 @@ fun HomeScreen(
                             isSearchActive = !isSearchActive
                         }) {
                             Icon(
-                                if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
+                                if (isSearchActive) AppIcons.Close else AppIcons.Search,
                                 contentDescription = if (isSearchActive) Strings.HOME_SEARCH_CLOSE else Strings.HOME_SEARCH_OPEN,
                             )
                         }
@@ -181,7 +170,7 @@ fun HomeScreen(
                     Box {
                         Tooltip(Strings.SYNC_ACCOUNT_MENU) {
                             IconButton(onClick = { accountMenuExpanded = true }) {
-                                Icon(Icons.Default.AccountCircle, contentDescription = Strings.SYNC_ACCOUNT_MENU)
+                                Icon(AppIcons.AccountCircle, contentDescription = Strings.SYNC_ACCOUNT_MENU)
                             }
                         }
                         DropdownMenu(
@@ -191,7 +180,7 @@ fun HomeScreen(
                             if (!uiState.isSignedIn) {
                                 DropdownMenuItem(
                                     text = { Text(Strings.BACKUP_SIGN_IN) },
-                                    leadingIcon = { Icon(Icons.Default.AccountCircle, null) },
+                                    leadingIcon = { Icon(AppIcons.AccountCircle, null) },
                                     onClick = {
                                         accountMenuExpanded = false
                                         viewModel.onSignInClicked()
@@ -210,7 +199,7 @@ fun HomeScreen(
                                 }
                                 DropdownMenuItem(
                                     text = { Text(Strings.SYNC_NOW) },
-                                    leadingIcon = { Icon(Icons.Default.CloudUpload, null) },
+                                    leadingIcon = { Icon(AppIcons.CloudUpload, null) },
                                     onClick = {
                                         accountMenuExpanded = false
                                         viewModel.onSyncNow()
@@ -218,7 +207,7 @@ fun HomeScreen(
                                 )
                                 DropdownMenuItem(
                                     text = { Text(Strings.BACKUP_SIGN_OUT) },
-                                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
+                                    leadingIcon = { Icon(AppIcons.Logout, null) },
                                     onClick = {
                                         accountMenuExpanded = false
                                         viewModel.onSignOut()
@@ -228,7 +217,7 @@ fun HomeScreen(
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text(Strings.TRANSFER_EXPORT) },
-                                leadingIcon = { Icon(Icons.Default.FileDownload, null) },
+                                leadingIcon = { Icon(AppIcons.FileDownload, null) },
                                 onClick = {
                                     accountMenuExpanded = false
                                     chooseFile(window, Strings.TRANSFER_EXPORT, FileDialog.SAVE)
@@ -237,7 +226,7 @@ fun HomeScreen(
                             )
                             DropdownMenuItem(
                                 text = { Text(Strings.TRANSFER_IMPORT) },
-                                leadingIcon = { Icon(Icons.Default.FileUpload, null) },
+                                leadingIcon = { Icon(AppIcons.FileUpload, null) },
                                 onClick = {
                                     accountMenuExpanded = false
                                     chooseFile(window, Strings.TRANSFER_IMPORT, FileDialog.LOAD)
@@ -261,7 +250,7 @@ fun HomeScreen(
                     contentColor = Neutral90,
                     shape = CircleShape,
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = Strings.HOME_CREATE_DOCUMENT)
+                    Icon(AppIcons.Add, contentDescription = Strings.HOME_CREATE_DOCUMENT)
                 }
             }
         },
@@ -325,7 +314,7 @@ fun PinButton(alwaysOnTop: Boolean, onToggle: () -> Unit) {
     Tooltip(label) {
         IconButton(onClick = onToggle) {
             Icon(
-                imageVector = if (alwaysOnTop) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                imageVector = if (alwaysOnTop) AppIcons.PushPin else AppIcons.PushPinOutline,
                 contentDescription = label,
                 tint = if (alwaysOnTop) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -346,7 +335,7 @@ private fun chooseFile(window: java.awt.Frame?, title: String, mode: Int): Path?
 private fun EmptyState(isSearching: Boolean, query: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(
-            imageVector = if (isSearching) Icons.Default.Search else Icons.Outlined.Description,
+            imageVector = if (isSearching) AppIcons.Search else AppIcons.Description,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
             modifier = Modifier.size(64.dp),

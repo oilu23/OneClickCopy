@@ -1,5 +1,6 @@
 package com.oneclickcopy.ui.editor
 
+import com.oneclickcopy.ui.icons.AppIcons
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.activity.compose.BackHandler
@@ -23,12 +24,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -167,7 +162,7 @@ fun EditorScreen(
                 navigationIcon = {
                     IconButton(onClick = leaveEditor, enabled = !exitGate.isLeaving) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
+                            AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.editor_back),
                         )
                     }
@@ -185,7 +180,7 @@ fun EditorScreen(
                             enabled = uiState.canUndoReorder,
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Undo,
+                                imageVector = AppIcons.Undo,
                                 contentDescription = stringResource(R.string.editor_undo_reorder),
                                 tint = if (uiState.canUndoReorder) {
                                     MaterialTheme.colorScheme.onSurface
@@ -202,7 +197,7 @@ fun EditorScreen(
                             enabled = uiState.copiedCount > 0,
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Refresh,
+                                imageVector = AppIcons.Refresh,
                                 contentDescription = stringResource(R.string.editor_reset_checks),
                                 tint = if (uiState.copiedCount > 0) {
                                     MaterialTheme.colorScheme.onSurface
@@ -303,7 +298,7 @@ private fun CopyModeList(
             verticalArrangement = Arrangement.Center,
         ) {
             Icon(
-                Icons.Default.TouchApp,
+                AppIcons.TouchApp,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
                 modifier = Modifier.size(56.dp),
@@ -520,7 +515,7 @@ private fun ModeToggle(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = if (isCopyMode) Icons.Default.TouchApp else Icons.Default.EditNote,
+                imageVector = if (isCopyMode) AppIcons.TouchApp else AppIcons.EditNote,
                 contentDescription = null,
                 tint = contentColor,
                 modifier = Modifier.size(18.dp),
